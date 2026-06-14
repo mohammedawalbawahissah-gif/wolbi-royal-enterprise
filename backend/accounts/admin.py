@@ -12,6 +12,7 @@ class CustomUserAdmin(UserAdmin):
         "first_name",
         "last_name",
         "role",
+        "job_title",
         "is_staff",
         "is_active",
     )
@@ -22,6 +23,14 @@ class CustomUserAdmin(UserAdmin):
         "is_active",
     )
 
+    search_fields = (
+        "username",
+        "email",
+        "first_name",
+        "last_name",
+        "phone",
+    )
+
     fieldsets = UserAdmin.fieldsets + (
         (
             "Wolbi Information",
@@ -29,6 +38,8 @@ class CustomUserAdmin(UserAdmin):
                 "fields": (
                     "role",
                     "phone",
+                    "job_title",
+                    "bio",
                     "profile_image",
                 )
             },
@@ -42,6 +53,7 @@ class CustomUserAdmin(UserAdmin):
                 "fields": (
                     "role",
                     "phone",
+                    "job_title",
                 )
             },
         ),
