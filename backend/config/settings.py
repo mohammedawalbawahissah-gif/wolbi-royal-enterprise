@@ -1,6 +1,5 @@
 from pathlib import Path
 from datetime import timedelta
-import os
 from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,7 +21,8 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "django_filters",
-    "storages",
+    "cloudinary",
+    "cloudinary_storage",
 
     "core",
     "blog",
@@ -42,6 +42,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -51,6 +52,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", default="http://localhost:3000", cast=Csv())
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = "config.urls"
 
@@ -96,9 +98,28 @@ TIME_ZONE = "Africa/Accra"
 USE_I18N = True
 USE_TZ = True
 
+# ─── Static Files ─────────────────────────────────────────────────────────────
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+# ─── Cloudinary Media Storage ─────────────────────────────────────────────────
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": config("CLOUDINARY_CLOUD_NAME", default=""),
+    "API_KEY":    config("CLOUDINARY_API_KEY",    default=""),
+    "API_SECRET": config("CLOUDINARY_API_SECRET", default=""),
+}
+
+_USE_CLOUDINARY = config("CLOUDINARY_CLOUD_NAME", default="")
+
+if _USE_CLOUDINARY:
+    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+    MEDIA_URL = "/media/"
+else:
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = BASE_DIR / "media"
+
+# ─── REST Framework ───────────────────────────────────────────────────────────
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -118,23 +139,6 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
-
-# ─── Cloudflare R2 Storage ───────────────────────────────────────────────────
-_USE_R2 = config("R2_ACCESS_KEY_ID", default="")
-
-if _USE_R2:
-    DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-    AWS_ACCESS_KEY_ID = config("R2_ACCESS_KEY_ID")
-    AWS_SECRET_ACCESS_KEY = config("R2_SECRET_ACCESS_KEY")
-    AWS_STORAGE_BUCKET_NAME = config("R2_BUCKET_NAME")
-    AWS_S3_ENDPOINT_URL = config("R2_ENDPOINT_URL")
-    AWS_S3_CUSTOM_DOMAIN = config("R2_CUSTOM_DOMAIN", default="")
-    AWS_DEFAULT_ACL = None
-    AWS_S3_FILE_OVERWRITE = False
-    MEDIA_URL = f"{AWS_S3_CUSTOM_DOMAIN}/" if AWS_S3_CUSTOM_DOMAIN else f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/"
-else:
-    MEDIA_URL = "/media/"
-    MEDIA_ROOT = BASE_DIR / "media"
 
 # ─── Email via Resend ─────────────────────────────────────────────────────────
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
