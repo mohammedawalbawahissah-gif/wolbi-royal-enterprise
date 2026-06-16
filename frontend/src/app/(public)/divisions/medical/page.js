@@ -504,7 +504,7 @@ export default function MedicalPage() {
                   <p style={{ color: "var(--muted)", fontSize: "13px", lineHeight: 1.5 }}>Send referral documentation, detailed queries, or clinical correspondence directly to our inbox.</p>
                 </div>
               </div>
-              <a href="mailto:mohammedawalbawahissah@gmail.com" style={{ display: "inline-block", padding: "9px 18px", background: "#7c3aed", color: "#fff", borderRadius: "8px", fontSize: "13px", fontWeight: 700, textDecoration: "none" }}>
+              <a href="mailto:medical@wolbiroyal.com" style={{ display: "inline-block", padding: "9px 18px", background: "#7c3aed", color: "#fff", borderRadius: "8px", fontSize: "13px", fontWeight: 700, textDecoration: "none" }}>
                 ✉️ Send Email
               </a>
             </Card>

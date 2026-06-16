@@ -72,6 +72,7 @@ function NavItem({ item }) {
 function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileExpanded, setMobileExpanded] = useState(null);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -80,13 +81,26 @@ function Navbar() {
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
+  // Lock body scroll when mobile menu open
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
+
   return (
     <>
       <style>{`
-        .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; transition: all 0.3s ease; padding: 0 2rem; }
+        .navbar {
+          position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+          transition: all 0.3s ease; padding: 0 1.5rem;
+        }
         .navbar.scrolled { background: var(--card-bg); box-shadow: var(--shadow-md); }
         .navbar:not(.scrolled) { background: transparent; }
-        .navbar-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 72px; }
+        .navbar-inner {
+          max-width: 1200px; margin: 0 auto;
+          display: flex; align-items: center; justify-content: space-between;
+          height: 68px;
+        }
         .nav-logo { display: flex; flex-direction: column; text-decoration: none; }
         .nav-logo-name { font-size: 15px; font-weight: 800; letter-spacing: -0.3px; color: var(--primary); line-height: 1.1; }
         .navbar:not(.scrolled) .nav-logo-name { color: #fff; }
@@ -94,8 +108,8 @@ function Navbar() {
         .navbar:not(.scrolled) .nav-logo-sub { color: rgba(255,255,255,0.6); }
         .nav-links { display: flex; align-items: center; gap: 2px; }
         .nav-link {
-          display: flex; align-items: center; gap: 4px; padding: 7px 10px; border-radius: 6px;
-          font-size: 13px; font-weight: 500; color: var(--foreground); text-decoration: none;
+          display: flex; align-items: center; gap: 4px; padding: 7px 9px; border-radius: 6px;
+          font-size: 12.5px; font-weight: 500; color: var(--foreground); text-decoration: none;
           cursor: pointer; transition: color 0.15s; background: none; border: none;
           white-space: nowrap; font-family: inherit;
         }
@@ -105,7 +119,7 @@ function Navbar() {
         .dropdown-menu {
           position: absolute; top: calc(100% + 8px); left: 0;
           background: var(--card-bg); border: 1px solid var(--border);
-          border-radius: 10px; padding: 6px; min-width: 230px;
+          border-radius: 10px; padding: 6px; min-width: 220px;
           box-shadow: var(--shadow-lg); z-index: 200;
         }
         .dropdown-item { display: block; padding: 9px 12px; border-radius: 6px; font-size: 13px; color: var(--foreground); text-decoration: none; transition: background 0.1s; }
@@ -113,15 +127,50 @@ function Navbar() {
         .dropdown-header { font-weight: 700; color: var(--accent) !important; font-size: 12px; }
         .nav-cta { padding: 8px 16px; background: var(--accent); color: #fff; border-radius: 7px; font-size: 13px; font-weight: 600; text-decoration: none; margin-left: 6px; transition: opacity 0.15s; white-space: nowrap; }
         .nav-cta:hover { opacity: 0.88; }
-        .theme-btn { background: none; border: 1px solid var(--border); padding: 7px; border-radius: 7px; cursor: pointer; color: var(--foreground); display: flex; align-items: center; margin-left: 6px; }
+        .theme-btn { background: none; border: 1px solid var(--border); padding: 6px; border-radius: 7px; cursor: pointer; color: var(--foreground); display: flex; align-items: center; margin-left: 6px; flex-shrink: 0; }
         .navbar:not(.scrolled) .theme-btn { border-color: rgba(255,255,255,0.3); color: #fff; }
-        .hamburger { display: none; background: none; border: none; cursor: pointer; color: var(--foreground); padding: 4px; }
+        .hamburger { display: none; background: none; border: none; cursor: pointer; color: var(--foreground); padding: 4px; flex-shrink: 0; }
         .navbar:not(.scrolled) .hamburger { color: #fff; }
-        .mobile-menu { position: fixed; top: 72px; left: 0; right: 0; bottom: 0; background: var(--card-bg); z-index: 999; overflow-y: auto; padding: 24px; }
-        .mobile-link { display: block; padding: 14px 0; font-size: 16px; font-weight: 500; color: var(--foreground); text-decoration: none; border-bottom: 1px solid var(--border); }
-        .mobile-sub { padding-left: 16px; }
-        .mobile-sub-link { display: block; padding: 10px 0; font-size: 14px; color: var(--muted); text-decoration: none; }
-        @media (max-width: 960px) { .nav-links { display: none; } .nav-cta { display: none; } .hamburger { display: flex; } }
+
+        /* Mobile menu */
+        .mobile-menu {
+          position: fixed; top: 68px; left: 0; right: 0; bottom: 0;
+          background: var(--card-bg); z-index: 999; overflow-y: auto;
+          padding: 0; display: flex; flex-direction: column;
+        }
+        .mobile-nav-item { border-bottom: 1px solid var(--border); }
+        .mobile-link {
+          display: flex; justify-content: space-between; align-items: center;
+          padding: 16px 24px; font-size: 16px; font-weight: 600;
+          color: var(--foreground); text-decoration: none; width: 100%;
+          background: none; border: none; cursor: pointer; font-family: inherit;
+          text-align: left;
+        }
+        .mobile-sub { background: var(--muted-bg); }
+        .mobile-sub-link {
+          display: block; padding: 12px 32px; font-size: 14px; font-weight: 500;
+          color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--border);
+        }
+        .mobile-sub-link:last-child { border-bottom: none; }
+        .mobile-sub-link:hover { color: var(--primary); }
+        .mobile-cta {
+          display: block; margin: 20px 24px; padding: 14px;
+          background: var(--accent); color: #fff; border-radius: 10px;
+          font-size: 15px; font-weight: 700; text-align: center; text-decoration: none;
+        }
+        .mobile-theme {
+          margin: 0 24px 24px; padding: 12px;
+          background: var(--muted-bg); border: 1px solid var(--border);
+          border-radius: 10px; font-size: 14px; font-weight: 600;
+          color: var(--foreground); cursor: pointer; width: calc(100% - 48px);
+          font-family: inherit;
+        }
+
+        @media (max-width: 1020px) {
+          .nav-links { display: none; }
+          .nav-cta { display: none; }
+          .hamburger { display: flex; }
+        }
       `}</style>
 
       <nav className={`navbar${scrolled ? " scrolled" : ""}`}>
@@ -139,7 +188,7 @@ function Navbar() {
             </button>
             <Link href="/contact" className="nav-cta">Get in Touch</Link>
             <button className="hamburger" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Menu">
-              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+              {mobileOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>
@@ -148,17 +197,42 @@ function Navbar() {
       {mobileOpen && (
         <div className="mobile-menu">
           {NAV.map((item) => (
-            <div key={item.href}>
-              <Link href={item.href} className="mobile-link" onClick={() => setMobileOpen(false)}>{item.label}</Link>
-              {item.children && (
-                <div className="mobile-sub">
-                  {item.children.map((c) => (
-                    <Link key={c.href} href={c.href} className="mobile-sub-link" onClick={() => setMobileOpen(false)}>{c.label}</Link>
-                  ))}
-                </div>
+            <div key={item.href} className="mobile-nav-item">
+              {item.children ? (
+                <>
+                  <button
+                    className="mobile-link"
+                    onClick={() => setMobileExpanded(mobileExpanded === item.href ? null : item.href)}
+                  >
+                    {item.label}
+                    <ChevronDown size={16} style={{ transition: "transform 0.2s", transform: mobileExpanded === item.href ? "rotate(180deg)" : "rotate(0)" }} />
+                  </button>
+                  {mobileExpanded === item.href && (
+                    <div className="mobile-sub">
+                      <Link href={item.href} className="mobile-sub-link" onClick={() => setMobileOpen(false)}>
+                        All {item.label} →
+                      </Link>
+                      {item.children.map((c) => (
+                        <Link key={c.href} href={c.href} className="mobile-sub-link" onClick={() => setMobileOpen(false)}>
+                          {c.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Link href={item.href} className="mobile-link" onClick={() => setMobileOpen(false)}>
+                  {item.label}
+                </Link>
               )}
             </div>
           ))}
+          <Link href="/contact" className="mobile-cta" onClick={() => setMobileOpen(false)}>
+            Get in Touch
+          </Link>
+          <button className="mobile-theme" onClick={toggleTheme}>
+            {theme === "light" ? "🌙 Switch to Dark Mode" : "☀️ Switch to Light Mode"}
+          </button>
         </div>
       )}
     </>
@@ -167,18 +241,30 @@ function Navbar() {
 
 function Footer() {
   return (
-    <footer style={{ background: "var(--primary)", color: "#fff", padding: "64px 2rem 32px" }}>
+    <footer style={{ background: "var(--primary)", color: "#fff", padding: "64px 1.5rem 32px" }}>
       <style>{`
-        .footer-grid { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; }
+        .footer-grid {
+          max-width: 1200px; margin: 0 auto;
+          display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px;
+        }
         .footer-brand-name { font-size: 18px; font-weight: 800; margin-bottom: 12px; }
         .footer-brand-desc { font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.7; max-width: 280px; }
         .footer-col-title { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 16px; }
         .footer-link { display: block; font-size: 13px; color: rgba(255,255,255,0.7); text-decoration: none; margin-bottom: 10px; transition: color 0.15s; }
         .footer-link:hover { color: #fff; }
-        .footer-bottom { max-width: 1200px; margin: 48px auto 0; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .footer-bottom {
+          max-width: 1200px; margin: 48px auto 0; padding-top: 24px;
+          border-top: 1px solid rgba(255,255,255,0.1);
+          display: flex; justify-content: space-between; align-items: center;
+          flex-wrap: wrap; gap: 12px;
+        }
         .footer-bottom-text { font-size: 12px; color: rgba(255,255,255,0.4); }
-        @media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
-        @media (max-width: 480px) { .footer-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) {
+          .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+        }
+        @media (max-width: 480px) {
+          .footer-grid { grid-template-columns: 1fr; gap: 28px; }
+        }
       `}</style>
       <div className="footer-grid">
         <div>
