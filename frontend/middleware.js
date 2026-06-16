@@ -10,29 +10,38 @@ function decodeJWT(token) {
 }
 
 const PUBLIC_PREFIXES = [
-  "/",
-  "/login",
   "/about",
+  "/founder",
   "/divisions",
   "/solutions",
   "/industries",
   "/projects",
   "/blog",
   "/contact",
-  "/founder",
+  "/partners",
+  "/schedule",
   "/api",
   "/_next",
   "/favicon",
+  "/founder-primary.jpg",
+  "/founder-secondary.jpg",
 ];
 
 export function middleware(request) {
   const { pathname } = request.nextUrl;
+
+  // Root is always public
+  if (pathname === "/") return NextResponse.next();
 
   // Allow all public routes
   if (PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
     return NextResponse.next();
   }
 
+  // Everything under /login is public
+  if (pathname.startsWith("/login")) return NextResponse.next();
+
+  // All other routes require auth
   const token = request.cookies.get("access_token")?.value;
 
   if (!token) {
@@ -51,29 +60,9 @@ export function middleware(request) {
     return response;
   }
 
-  const role = payload.role;
-
-  if (pathname.startsWith("/dashboard")) {
-    const roleRoutes = {
-      admin:      "/dashboard/admin",
-      medical:    "/dashboard/medical",
-      va:         "/dashboard/va",
-      foundation: "/dashboard/foundation",
-      client:     "/dashboard/client",
-    };
-
-    for (const [slug, prefix] of Object.entries(roleRoutes)) {
-      if (pathname.startsWith(`/dashboard/${slug}`) && role !== slug.toUpperCase()) {
-        return NextResponse.redirect(new URL("/dashboard", request.url));
-      }
-    }
-
-    return NextResponse.next();
-  }
-
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.jpg|.*\\.png|.*\\.svg|.*\\.ico).*)"],
 };
