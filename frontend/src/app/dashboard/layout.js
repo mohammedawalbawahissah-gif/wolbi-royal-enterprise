@@ -42,7 +42,6 @@ const NAV_LINKS = {
   ],
 };
 
-// Quick-action buttons shown per role
 const QUICK_ACTIONS = {
   ADMIN: [
     { href: "/dashboard/users/create",      label: "+ Add Staff" },
@@ -63,12 +62,13 @@ function Sidebar({ user }) {
 
   return (
     <aside style={{
-      width: "240px", minHeight: "100vh", background: "var(--primary)",
+      width: "240px", height: "100vh", background: "var(--primary)",
       display: "flex", flexDirection: "column",
       position: "fixed", top: 0, left: 0, zIndex: 100,
+      overflow: "hidden", /* the aside itself never scrolls — only the nav area below does */
     }}>
-      {/* Header */}
-      <div style={{ padding: "24px 20px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+      {/* Header — fixed, never scrolls */}
+      <div style={{ padding: "24px 20px", borderBottom: "1px solid rgba(255,255,255,0.1)", flexShrink: 0 }}>
         <Link href="/" style={{ textDecoration: "none" }}>
           <p style={{ color: "#fff", fontWeight: 800, fontSize: "15px", letterSpacing: "-0.3px" }}>Wolbi Royal</p>
           <p style={{ color: "rgba(255,255,255,0.45)", fontSize: "10px", letterSpacing: "1.5px", textTransform: "uppercase" }}>Enterprise</p>
@@ -79,8 +79,17 @@ function Sidebar({ user }) {
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav style={{ flex: 1, padding: "12px 0", overflowY: "auto" }}>
+      {/* Navigation — THIS scrolls if content is taller than the viewport */}
+      <nav style={{
+        flex: "1 1 auto", minHeight: 0, padding: "12px 0", overflowY: "auto",
+        scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.25) transparent",
+      }}>
+        <style>{`
+          nav::-webkit-scrollbar { width: 6px; }
+          nav::-webkit-scrollbar-track { background: transparent; }
+          nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+          nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
+        `}</style>
         {links.map((link) => {
           const active = pathname === link.href || pathname.startsWith(link.href + "/");
           return (
@@ -96,7 +105,6 @@ function Sidebar({ user }) {
           );
         })}
 
-        {/* Quick actions */}
         {actions.length > 0 && (
           <div style={{ padding: "12px 16px", marginTop: "8px", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
             <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "rgba(255,255,255,0.35)", marginBottom: "8px" }}>Quick Add</p>
@@ -114,8 +122,11 @@ function Sidebar({ user }) {
         )}
       </nav>
 
-      {/* Footer */}
-      <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.1)", display: "flex", flexDirection: "column", gap: "10px" }}>
+      {/* Footer — fixed, ALWAYS visible regardless of nav scroll position */}
+      <div style={{
+        padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.1)",
+        display: "flex", flexDirection: "column", gap: "10px", flexShrink: 0,
+      }}>
         <Link href="/schedule" style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", textDecoration: "none", padding: "6px 0" }}>
           📅 Schedule a Call
         </Link>
