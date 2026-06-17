@@ -17,6 +17,7 @@ const NAV_LINKS = {
     { href: "/dashboard/services",    label: "Services" },
     { href: "/dashboard/products",    label: "Products" },
     { href: "/dashboard/newsletter",  label: "Newsletter" },
+    { href: "/dashboard/users",       label: "Users & Staff" },
   ],
   MEDICAL: [
     { href: "/dashboard/medical",     label: "Medical Hub" },
@@ -44,6 +45,7 @@ const NAV_LINKS = {
 // Quick-action buttons shown per role
 const QUICK_ACTIONS = {
   ADMIN: [
+    { href: "/dashboard/users/create",      label: "+ Add Staff" },
     { href: "/dashboard/blog/create",       label: "+ New Post" },
     { href: "/dashboard/projects/create",   label: "+ New Project" },
     { href: "/dashboard/assignments/create",label: "+ Assignment" },
