@@ -24,6 +24,18 @@ function LeadsContent() {
     loadLeads();
   };
 
+  const [retriaging, setRetriaging] = useState(null);
+  const retriage = async (id) => {
+    setRetriaging(id);
+    try {
+      await api.post(`/leads/${id}/ai_retriage/`);
+      await loadLeads();
+    } catch { /* AI not configured or temporarily unavailable */ }
+    setRetriaging(null);
+  };
+
+  const priorityColor = { HIGH: "#e11d48", MEDIUM: "#f59e0b", LOW: "var(--muted)" };
+
   const filtered = filter === "ALL"
     ? leads
     : filter === "NEW"
@@ -69,6 +81,11 @@ function LeadsContent() {
                   {lead.organization && <p style={{ color: "var(--muted)", fontSize: "13px" }}>{lead.organization}</p>}
                 </div>
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  {lead.ai_priority && (
+                    <span style={{ fontSize: "11px", fontWeight: 700, color: "#fff", background: priorityColor[lead.ai_priority], padding: "2px 10px", borderRadius: "999px" }}>
+                      AI: {lead.ai_priority}
+                    </span>
+                  )}
                   <span style={{ fontSize: "12px", background: "var(--muted-bg)", padding: "2px 10px", borderRadius: "999px", color: "var(--muted)" }}>
                     {lead.inquiry_type}
                   </span>
@@ -77,20 +94,45 @@ function LeadsContent() {
               </div>
               <p style={{ margin: "10px 0 4px", fontWeight: 500, fontSize: "14px" }}>{lead.subject}</p>
               <p style={{ color: "var(--muted)", fontSize: "13px", lineHeight: 1.5 }}>{lead.message}</p>
+
+              {(lead.ai_summary || lead.ai_possible_duplicate || lead.ai_suggested_type) && (
+                <div style={{ marginTop: "10px", padding: "10px 12px", background: "var(--muted-bg)", borderRadius: "var(--radius)", fontSize: "13px" }}>
+                  {lead.ai_summary && <p style={{ marginBottom: "4px" }}>🤖 {lead.ai_summary}</p>}
+                  {lead.ai_possible_duplicate && (
+                    <p style={{ color: "#e11d48", fontWeight: 600 }}>⚠ Possibly a repeat inquiry from this person</p>
+                  )}
+                  {lead.ai_suggested_type && lead.ai_suggested_type !== lead.inquiry_type && (
+                    <p style={{ color: "var(--muted)" }}>AI suggests category: <strong>{lead.ai_suggested_type}</strong></p>
+                  )}
+                </div>
+              )}
+
               <p style={{ color: "var(--muted)", fontSize: "12px", marginTop: "10px" }}>
                 {new Date(lead.created_at).toLocaleString()}
               </p>
-              {!lead.is_contacted && (
+              <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
+                {!lead.is_contacted && (
+                  <button
+                    onClick={() => markContacted(lead.id)}
+                    style={{
+                      padding: "6px 14px", background: "var(--accent)",
+                      color: "#fff", border: "none", borderRadius: "var(--radius)", fontSize: "13px", cursor: "pointer",
+                    }}
+                  >
+                    Mark Contacted
+                  </button>
+                )}
                 <button
-                  onClick={() => markContacted(lead.id)}
+                  onClick={() => retriage(lead.id)}
+                  disabled={retriaging === lead.id}
                   style={{
-                    marginTop: "12px", padding: "6px 14px", background: "var(--accent)",
-                    color: "#fff", border: "none", borderRadius: "var(--radius)", fontSize: "13px", cursor: "pointer",
+                    padding: "6px 14px", background: "transparent", border: "1px solid var(--border)",
+                    color: "var(--foreground)", borderRadius: "var(--radius)", fontSize: "13px", cursor: "pointer",
                   }}
                 >
-                  Mark Contacted
+                  {retriaging === lead.id ? "Analyzing…" : "🤖 Re-run AI Triage"}
                 </button>
-              )}
+              </div>
             </div>
           ))}
         </div>

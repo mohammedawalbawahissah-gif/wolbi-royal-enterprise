@@ -4,6 +4,59 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
+function AIDraftPanel() {
+  const [topic, setTopic] = useState("");
+  const [businessUnit, setBusinessUnit] = useState("GENERAL");
+  const [draft, setDraft] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const generate = async () => {
+    if (!topic.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.post("/newsletter/ai-draft/", { topic, business_unit: businessUnit });
+      setDraft(res.data.draft);
+    } catch {
+      setError("AI drafting isn't available right now. Make sure ANTHROPIC_API_KEY is configured.");
+    }
+    setLoading(false);
+  };
+
+  const copy = () => navigator.clipboard.writeText(draft);
+
+  const inputStyle = { padding: "10px 14px", borderRadius: "var(--radius)", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--foreground)", fontSize: "14px" };
+
+  return (
+    <div style={{ background: "var(--card-bg)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow)", padding: "24px", marginBottom: "24px" }}>
+      <h2 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "12px" }}>🤖 Draft a Newsletter with AI</h2>
+      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "12px" }}>
+        <input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="What's this newsletter about?" style={{ ...inputStyle, flex: 1, minWidth: "220px" }} />
+        <select value={businessUnit} onChange={(e) => setBusinessUnit(e.target.value)} style={inputStyle}>
+          <option value="GENERAL">General / All divisions</option>
+          <option value="TECHNOLOGIES">Wolbi Technologies</option>
+          <option value="MEDICAL">Wolbi Medical Services</option>
+          <option value="VIRTUAL_SOLUTIONS">Wolbi Virtual Solutions</option>
+          <option value="FOUNDATION">Wolbi Foundation</option>
+        </select>
+        <button onClick={generate} disabled={loading || !topic.trim()} style={{ padding: "10px 18px", background: "var(--primary)", color: "#fff", border: "none", borderRadius: "var(--radius)", fontSize: "14px", cursor: "pointer" }}>
+          {loading ? "Drafting…" : "Draft"}
+        </button>
+      </div>
+      {error && <p style={{ color: "#e11d48", fontSize: "13px" }}>{error}</p>}
+      {draft && (
+        <div>
+          <textarea readOnly value={draft} rows={10} style={{ ...inputStyle, width: "100%", fontFamily: "inherit", whiteSpace: "pre-wrap" }} />
+          <button onClick={copy} style={{ marginTop: "8px", padding: "6px 14px", background: "transparent", border: "1px solid var(--border)", color: "var(--foreground)", borderRadius: "var(--radius)", fontSize: "13px", cursor: "pointer" }}>
+            Copy to clipboard
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function NewsletterContent() {
   const [subscribers, setSubscribers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +93,8 @@ function NewsletterContent() {
           Export CSV
         </button>
       </div>
+
+      <AIDraftPanel />
 
       <input
         value={search}

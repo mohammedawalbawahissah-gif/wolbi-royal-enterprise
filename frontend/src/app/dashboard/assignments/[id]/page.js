@@ -14,6 +14,9 @@ function AssignmentDetailContent({ params }) {
   const [files, setFiles] = useState([]);
   const [comment, setComment] = useState("");
   const [posting, setPosting] = useState(false);
+  const [aiSummary, setAiSummary] = useState(null);
+  const [summarizing, setSummarizing] = useState(false);
+  const [aiError, setAiError] = useState(null);
 
   useEffect(() => { loadAssignment(); loadFiles(); }, []);
 
@@ -21,6 +24,18 @@ function AssignmentDetailContent({ params }) {
     api.get(`/assignments/${id}/`).then((r) => setAssignment(r.data)).catch(() => {});
   const loadFiles = () =>
     api.get(`/files/?assignment=${id}`).then((r) => setFiles(r.data.results || r.data)).catch(() => {});
+
+  const runAiSummary = async () => {
+    setSummarizing(true);
+    setAiError(null);
+    try {
+      const res = await api.get(`/assignments/${id}/ai_summary/`);
+      setAiSummary(res.data.summary);
+    } catch {
+      setAiError("AI summary isn't available right now. Make sure ANTHROPIC_API_KEY is configured.");
+    }
+    setSummarizing(false);
+  };
 
   const postComment = async () => {
     if (!comment.trim()) return;
@@ -57,6 +72,21 @@ function AssignmentDetailContent({ params }) {
 
       <div style={{ background: "var(--card-bg)", padding: "24px", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow)", marginBottom: "20px" }}>
         <p style={{ lineHeight: 1.7 }}>{assignment.description}</p>
+      </div>
+
+      <div style={{ background: "var(--card-bg)", padding: "24px", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow)", marginBottom: "20px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: aiSummary || aiError ? "10px" : 0 }}>
+          <h2 style={{ fontSize: "16px", fontWeight: 600 }}>🤖 AI Progress Summary</h2>
+          <button
+            onClick={runAiSummary}
+            disabled={summarizing}
+            style={{ padding: "6px 14px", background: "var(--primary)", color: "#fff", border: "none", borderRadius: "var(--radius)", fontSize: "13px", cursor: "pointer" }}
+          >
+            {summarizing ? "Summarizing…" : aiSummary ? "Refresh" : "Summarize progress"}
+          </button>
+        </div>
+        {aiError && <p style={{ color: "#e11d48", fontSize: "13px" }}>{aiError}</p>}
+        {aiSummary && <p style={{ lineHeight: 1.7, fontSize: "14px" }}>{aiSummary}</p>}
       </div>
 
       <div style={{ background: "var(--card-bg)", padding: "24px", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow)", marginBottom: "20px" }}>

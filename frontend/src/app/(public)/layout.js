@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { Menu, X, Sun, Moon, ChevronDown } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import AIConcierge from "@/components/AIConcierge";
 
 const NAV = [
   { label: "About", href: "/about" },
@@ -298,6 +299,7 @@ export default function PublicLayout({ children }) {
       <Navbar />
       <main>{children}</main>
       <Footer />
+      <AIConcierge />
     </>
   );
 }

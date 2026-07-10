@@ -21,6 +21,22 @@ function CreateAssignmentContent() {
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggesting, setSuggesting] = useState(false);
+  const suggestAssignee = async () => {
+    if (!formData.title && !formData.description) return;
+    setSuggesting(true);
+    try {
+      const res = await api.post("/assignments/suggest_assignee/", {
+        title: formData.title, description: formData.description,
+      });
+      setSuggestions(res.data.suggestions || []);
+    } catch {
+      setSuggestions([]);
+    }
+    setSuggesting(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -61,6 +77,28 @@ function CreateAssignmentContent() {
               <option value="">Select user</option>
               {users.map((u) => <option key={u.id} value={u.id}>{u.username} ({u.role})</option>)}
             </select>
+            <button
+              type="button"
+              onClick={suggestAssignee}
+              disabled={suggesting || (!formData.title && !formData.description)}
+              style={{ marginTop: "8px", padding: "5px 12px", background: "transparent", border: "1px solid var(--border)", color: "var(--foreground)", borderRadius: "var(--radius)", fontSize: "12px", cursor: "pointer" }}
+            >
+              {suggesting ? "Thinking…" : "🤖 Suggest best fit"}
+            </button>
+            {suggestions.length > 0 && (
+              <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                {suggestions.map((s) => (
+                  <button
+                    key={s.user_id}
+                    type="button"
+                    onClick={() => setFormData((f) => ({ ...f, assigned_to: String(s.user_id) }))}
+                    style={{ textAlign: "left", padding: "8px 12px", background: "var(--muted-bg)", border: "none", borderRadius: "var(--radius)", fontSize: "13px", cursor: "pointer" }}
+                  >
+                    <strong>{users.find((u) => u.id === s.user_id)?.username || `User #${s.user_id}`}</strong> — {s.reason}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div style={{ marginBottom: "20px" }}>

@@ -11,11 +11,25 @@ function ProjectDetailContent({ params }) {
   const { id } = use(params);
   const [project, setProject] = useState(null);
   const [files, setFiles] = useState([]);
+  const [generating, setGenerating] = useState(false);
+  const [aiError, setAiError] = useState(null);
 
   useEffect(() => { load(); loadFiles(); }, []);
 
   const load = () => api.get(`/projects/${id}/`).then((r) => setProject(r.data)).catch(() => {});
   const loadFiles = () => api.get(`/files/?project=${id}`).then((r) => setFiles(r.data.results || r.data)).catch(() => {});
+
+  const generateCaseStudy = async () => {
+    setGenerating(true);
+    setAiError(null);
+    try {
+      const res = await api.post(`/projects/${id}/generate_case_study/`);
+      setProject((p) => ({ ...p, ai_case_study_draft: res.data.ai_case_study_draft }));
+    } catch {
+      setAiError("AI drafting isn't available right now. Make sure ANTHROPIC_API_KEY is configured.");
+    }
+    setGenerating(false);
+  };
 
   if (!project) return <p style={{ color: "var(--muted)" }}>Loading project…</p>;
 
@@ -33,6 +47,25 @@ function ProjectDetailContent({ params }) {
 
       <div style={{ background: "var(--card-bg)", padding: "24px", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow)", marginBottom: "24px" }}>
         <p style={{ color: "var(--foreground)", lineHeight: 1.7 }}>{project.description || project.summary}</p>
+      </div>
+
+      <div style={{ background: "var(--card-bg)", padding: "24px", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow)", marginBottom: "24px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+          <h2 style={{ fontSize: "16px", fontWeight: 600 }}>🤖 AI Case Study Draft</h2>
+          <button
+            onClick={generateCaseStudy}
+            disabled={generating}
+            style={{ padding: "6px 14px", background: "var(--primary)", color: "#fff", border: "none", borderRadius: "var(--radius)", fontSize: "13px", cursor: "pointer" }}
+          >
+            {generating ? "Drafting…" : project.ai_case_study_draft ? "Regenerate" : "Draft with AI"}
+          </button>
+        </div>
+        {aiError && <p style={{ color: "#e11d48", fontSize: "13px" }}>{aiError}</p>}
+        {project.ai_case_study_draft ? (
+          <p style={{ color: "var(--foreground)", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{project.ai_case_study_draft}</p>
+        ) : (
+          !aiError && <p style={{ color: "var(--muted)", fontSize: "13px" }}>No draft yet — generate one to get a starting point for a blog post or case study.</p>
+        )}
       </div>
 
       <div style={{ background: "var(--card-bg)", padding: "24px", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow)" }}>

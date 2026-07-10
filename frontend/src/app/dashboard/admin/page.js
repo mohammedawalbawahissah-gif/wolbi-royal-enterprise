@@ -17,6 +17,44 @@ function StatCard({ label, value, color = "var(--primary)" }) {
   );
 }
 
+function AIInsightsCard() {
+  const [narrative, setNarrative] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const generate = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get("/core/analytics/ai-summary/");
+      setNarrative(res.data.narrative);
+    } catch {
+      setError("AI insights aren't available right now. Make sure ANTHROPIC_API_KEY is configured.");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{
+      background: "var(--card-bg)", borderRadius: "var(--radius-lg)", padding: "24px",
+      boxShadow: "var(--shadow)", marginBottom: "20px", border: "1px solid var(--border)",
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: narrative || error ? "12px" : 0 }}>
+        <h2 style={{ fontSize: "16px", fontWeight: 600 }}>🤖 AI Insights</h2>
+        <button
+          onClick={generate}
+          disabled={loading}
+          style={{ padding: "6px 14px", background: "var(--primary)", color: "#fff", border: "none", borderRadius: "var(--radius)", fontSize: "13px", cursor: "pointer" }}
+        >
+          {loading ? "Analyzing…" : narrative ? "Regenerate" : "Generate Briefing"}
+        </button>
+      </div>
+      {error && <p style={{ color: "#e11d48", fontSize: "13px" }}>{error}</p>}
+      {narrative && <p style={{ fontSize: "14px", lineHeight: 1.7, color: "var(--foreground)" }}>{narrative}</p>}
+    </div>
+  );
+}
+
 function AdminContent() {
   const [analytics, setAnalytics] = useState(null);
 
@@ -30,6 +68,8 @@ function AdminContent() {
       <p style={{ color: "var(--muted)", marginBottom: "32px" }}>
         Wolbi Royal Enterprise — Dashboard Analytics
       </p>
+
+      <AIInsightsCard />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "20px", marginBottom: "32px" }}>
         <StatCard label="Total Leads"    value={analytics?.leads}       color="var(--primary)" />
