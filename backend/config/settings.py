@@ -149,4 +149,8 @@ EMAIL_HOST_USER = "resend"
 EMAIL_HOST_PASSWORD = config("RESEND_API_KEY", default="")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@wolbiroyal.com")
 
+# ─── AI (Anthropic Claude) ─────────────────────────────────────────────────────
+ANTHROPIC_API_KEY = config("ANTHROPIC_API_KEY", default="")
+ANTHROPIC_MODEL = config("ANTHROPIC_MODEL", default="claude-sonnet-5")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

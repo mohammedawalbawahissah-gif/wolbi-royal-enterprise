@@ -35,6 +35,18 @@ class Lead(models.Model):
     notes        = models.TextField(blank=True, help_text="Internal notes")
     created_at   = models.DateTimeField(auto_now_add=True)
 
+    class Priority(models.TextChoices):
+        LOW    = "LOW",    "Low"
+        MEDIUM = "MEDIUM", "Medium"
+        HIGH   = "HIGH",   "High"
+
+    # ── AI triage (populated asynchronously right after creation) ──────────
+    ai_summary            = models.TextField(blank=True, help_text="AI-generated one-line triage summary")
+    ai_priority           = models.CharField(max_length=10, choices=Priority.choices, blank=True)
+    ai_suggested_type     = models.CharField(max_length=20, choices=InquiryType.choices, blank=True)
+    ai_possible_duplicate = models.BooleanField(default=False)
+    ai_processed_at       = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         ordering = ["-created_at"]
 
@@ -67,13 +79,74 @@ class Lead(models.Model):
             # Never let email failures affect the lead record itself.
             logger.warning(f"Lead notification email failed for lead {self.pk}: {e}")
 
+    def _run_ai_triage(self):
+        """
+        Background AI pass: suggests a priority, a one-line summary for staff,
+        a better inquiry_type if the form default looks wrong, and flags likely
+        duplicates. Never raises — any failure just leaves the ai_* fields blank.
+        """
+        from django.utils import timezone
+        from core.services.ai import ask_ai_json, AIServiceUnavailable
+
+        try:
+            recent_duplicates = list(
+                Lead.objects.filter(email__iexact=self.email)
+                .exclude(pk=self.pk)
+                .order_by("-created_at")[:3]
+                .values_list("subject", flat=True)
+            )
+            data = ask_ai_json(
+                system_prompt=(
+                    "You triage inbound leads for Wolbi Royal Enterprise, a Ghanaian group with "
+                    "divisions in Technology, Medical Services, Virtual Solutions, and Foundation "
+                    "(community programs), plus products NeoMatCare (maternal health), FarmaSyst "
+                    "(agriculture), and MAGHAZ Assist (real estate/hospitality/construction ERP). "
+                    "Given a lead's message, return JSON with keys: "
+                    "'summary' (max 20 words, staff-facing, plain language), "
+                    "'priority' (LOW, MEDIUM, or HIGH — HIGH only for urgent/high-value/time-sensitive asks), "
+                    "'suggested_type' (one of GENERAL, TECHNOLOGY, MEDICAL, VIRTUAL, FOUNDATION, "
+                    "AGRICULTURE, PARTNERSHIP, DEMO), "
+                    "'possible_duplicate' (true/false, true only if this looks like a repeat of a "
+                    "prior inquiry from the same person)."
+                ),
+                user_prompt=(
+                    f"Name: {self.name}\nOrganization: {self.organization or 'N/A'}\n"
+                    f"Form-selected inquiry type: {self.get_inquiry_type_display()}\n"
+                    f"Subject: {self.subject}\nMessage: {self.message}\n"
+                    f"Prior subjects from this email address: {recent_duplicates or 'none'}"
+                ),
+                max_tokens=300,
+            )
+            if not data:
+                return
+
+            valid_priorities = {c[0] for c in self.Priority.choices}
+            valid_types = {c[0] for c in self.InquiryType.choices}
+
+            self.ai_summary = str(data.get("summary", ""))[:500]
+            if data.get("priority") in valid_priorities:
+                self.ai_priority = data["priority"]
+            if data.get("suggested_type") in valid_types:
+                self.ai_suggested_type = data["suggested_type"]
+            self.ai_possible_duplicate = bool(data.get("possible_duplicate", False))
+            self.ai_processed_at = timezone.now()
+
+            super(Lead, self).save(update_fields=[
+                "ai_summary", "ai_priority", "ai_suggested_type",
+                "ai_possible_duplicate", "ai_processed_at",
+            ])
+        except AIServiceUnavailable as e:
+            logger.info(f"AI triage skipped for lead {self.pk}: {e}")
+        except Exception as e:
+            logger.warning(f"AI triage failed for lead {self.pk}: {e}")
+
     def save(self, *args, **kwargs):
         is_new = self._state.adding
         super().save(*args, **kwargs)
         if is_new:
-            # Fire-and-forget in a daemon thread. The HTTP response returns
-            # immediately regardless of how long (or whether) the email send
-            # takes. This is what prevents the 502 Bad Gateway under load
-            # or when the email provider is slow/unreachable.
-            thread = threading.Thread(target=self._send_notification_email, daemon=True)
-            thread.start()
+            # Fire-and-forget in daemon threads. The HTTP response returns
+            # immediately regardless of how long (or whether) email/AI calls
+            # take. This is what prevents the 502 Bad Gateway under load
+            # or when a provider is slow/unreachable.
+            threading.Thread(target=self._send_notification_email, daemon=True).start()
+            threading.Thread(target=self._run_ai_triage, daemon=True).start()

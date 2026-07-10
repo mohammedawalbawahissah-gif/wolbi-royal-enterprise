@@ -72,6 +72,11 @@ class Project(models.Model):
         related_name="assigned_projects"
     )
 
+    # AI-drafted marketing copy, generated on demand from the fields above.
+    # Stored so staff can review/edit before publishing rather than the AI
+    # writing straight to the public site.
+    ai_case_study_draft = models.TextField(blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

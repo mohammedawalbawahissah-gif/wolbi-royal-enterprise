@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from ..models import Lead
 from .serializers import LeadSerializer, LeadAdminSerializer
 from accounts.permissions import IsAdmin, IsStaff
+from core.services.ai import AIServiceUnavailable
 
 
 class LeadViewSet(viewsets.ModelViewSet):
@@ -31,3 +32,16 @@ class LeadViewSet(viewsets.ModelViewSet):
         lead.is_contacted = True
         lead.save()
         return Response({"status": "marked as contacted"})
+
+    @action(detail=True, methods=["post"], permission_classes=[IsStaff])
+    def ai_retriage(self, request, pk=None):
+        """Manually re-run AI triage (e.g. after notes were added, or if it
+        failed the first time). Runs synchronously so the UI can show the
+        result immediately instead of polling."""
+        lead = self.get_object()
+        try:
+            lead._run_ai_triage()
+        except AIServiceUnavailable as e:
+            return Response({"error": str(e)}, status=503)
+        lead.refresh_from_db()
+        return Response(LeadAdminSerializer(lead).data)
