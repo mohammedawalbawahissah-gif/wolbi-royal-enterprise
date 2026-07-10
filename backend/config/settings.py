@@ -84,7 +84,7 @@ DATABASES = {
         "HOST": config("DB_HOST", default="localhost"),
         "PORT": config("DB_PORT", default="5432"),
         "OPTIONS": {
-            "options": f"-c search_path={DB_SCHEMA},public"
+            "options": f"-c search_path={DB_SCHEMA}"
         },
     }
 }
