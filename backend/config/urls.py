@@ -1,10 +1,29 @@
+# config/urls.py
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
+from django.db import connection
+
+
+def health_check(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        db_ok = True
+    except Exception:
+        db_ok = False
+
+    return JsonResponse(
+        {"status": "ok" if db_ok else "degraded", "database": db_ok},
+        status=200 if db_ok else 503,
+    )
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("healthz/", health_check),
 
     path("api/v1/auth/",          include("accounts.api.urls")),
     path("api/v1/core/",          include("core.api.urls")),
