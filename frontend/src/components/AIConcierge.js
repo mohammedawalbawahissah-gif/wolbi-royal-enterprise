@@ -12,11 +12,13 @@ export default function AIConcierge() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [escalated, setEscalated] = useState(false);
   const bottomRef = useRef(null);
+  const escalatedRef = useRef(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, open]);
+  }, [messages, open, escalated]);
 
   const send = async () => {
     const text = input.trim();
@@ -29,11 +31,19 @@ export default function AIConcierge() {
       const res = await fetch(`${API_URL}/core/ai-concierge/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, history: nextMessages.slice(-8) }),
+        body: JSON.stringify({
+          message: text,
+          history: nextMessages.slice(-8),
+          already_escalated: escalatedRef.current,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
         setMessages((m) => [...m, { role: "assistant", content: data.reply }]);
+        if (data.escalated) {
+          escalatedRef.current = true;
+          setEscalated(true);
+        }
       } else {
         setMessages((m) => [...m, { role: "assistant", content: "Sorry, I'm not available right now — please use the contact form instead." }]);
       }
@@ -86,6 +96,15 @@ export default function AIConcierge() {
             ))}
             {loading && (
               <div style={{ alignSelf: "flex-start", color: "var(--muted)", fontSize: "13px" }}>Typing…</div>
+            )}
+            {escalated && (
+              <div style={{
+                alignSelf: "center", textAlign: "center", fontSize: "12px",
+                color: "var(--muted)", background: "var(--muted-bg)",
+                borderRadius: "999px", padding: "6px 14px", marginTop: "4px",
+              }}>
+                ✓ You're connected — a team member will follow up by email
+              </div>
             )}
             <div ref={bottomRef} />
           </div>
