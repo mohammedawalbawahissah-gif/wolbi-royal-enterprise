@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "industries",
     "foundation",
     "testimonials",
+    "teleconsultations",
 ]
 
 MIDDLEWARE = [
@@ -157,5 +158,8 @@ DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@wolbiroyal.co
 # ─── AI (Anthropic Claude) ─────────────────────────────────────────────────────
 ANTHROPIC_API_KEY = config("ANTHROPIC_API_KEY", default="")
 ANTHROPIC_MODEL = config("ANTHROPIC_MODEL", default="claude-sonnet-5")
+
+# ─── Video (Daily.co) ──────────────────────────────────────────────────────
+DAILY_API_KEY = config("DAILY_API_KEY", default="")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

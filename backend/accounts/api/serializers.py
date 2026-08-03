@@ -19,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
             "job_title",
             "bio",
             "is_active",
+            "is_available_for_calls",
             "date_joined",
         )
 
@@ -120,6 +121,7 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
             "job_title",
             "bio",
             "profile_image",
+            "is_available_for_calls",
         )
 
 

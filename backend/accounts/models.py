@@ -69,5 +69,10 @@ class User(AbstractUser):
         blank=True
     )
 
+    is_available_for_calls = models.BooleanField(
+        default=False,
+        help_text="Staff toggle — when on, this user can be matched to instant teleconsultation requests."
+    )
+
     def __str__(self):
         return f"{self.username} ({self.role})"

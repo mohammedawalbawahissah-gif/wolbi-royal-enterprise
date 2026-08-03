@@ -9,6 +9,9 @@ function LeadsContent() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("ALL");
+  const [openReplyFor, setOpenReplyFor] = useState(null);
+  const [replyText, setReplyText] = useState("");
+  const [sending, setSending] = useState(false);
 
   useEffect(() => { loadLeads(); }, []);
 
@@ -32,6 +35,21 @@ function LeadsContent() {
       await loadLeads();
     } catch { /* AI not configured or temporarily unavailable */ }
     setRetriaging(null);
+  };
+
+  const sendReply = async (id) => {
+    const text = replyText.trim();
+    if (!text || sending) return;
+    setSending(true);
+    try {
+      await api.post(`/leads/${id}/reply/`, { message: text });
+      setReplyText("");
+      setOpenReplyFor(null);
+      await loadLeads();
+    } catch {
+      alert("Couldn't send the reply. Please try again.");
+    }
+    setSending(false);
   };
 
   const priorityColor = { HIGH: "#e11d48", MEDIUM: "#f59e0b", LOW: "var(--muted)" };
@@ -77,7 +95,10 @@ function LeadsContent() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
                   <p style={{ fontWeight: 600, fontSize: "15px" }}>{lead.name}</p>
-                  <p style={{ color: "var(--muted)", fontSize: "13px" }}>{lead.email} {lead.phone ? `· ${lead.phone}` : ""}</p>
+                  <p style={{ color: "var(--muted)", fontSize: "13px" }}>
+                    <a href={`mailto:${lead.email}`} style={{ color: "inherit", textDecoration: "underline" }}>{lead.email}</a>
+                    {lead.phone ? <> · <a href={`tel:${lead.phone}`} style={{ color: "inherit", textDecoration: "underline" }}>{lead.phone}</a></> : ""}
+                  </p>
                   {lead.organization && <p style={{ color: "var(--muted)", fontSize: "13px" }}>{lead.organization}</p>}
                 </div>
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
@@ -107,10 +128,37 @@ function LeadsContent() {
                 </div>
               )}
 
+              {lead.replies && lead.replies.length > 0 && (
+                <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {lead.replies.map((r) => (
+                    <div key={r.id} style={{
+                      padding: "10px 12px", background: "var(--input-bg)", border: "1px solid var(--border)",
+                      borderRadius: "var(--radius)", fontSize: "13px",
+                    }}>
+                      <p style={{ color: "var(--muted)", fontSize: "11px", marginBottom: "4px" }}>
+                        {r.staff_name || "Staff"} · {new Date(r.sent_at).toLocaleString()}
+                        {r.email_sent ? " · ✓ emailed" : " · ⚠ email failed"}
+                      </p>
+                      <p>{r.message}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <p style={{ color: "var(--muted)", fontSize: "12px", marginTop: "10px" }}>
                 {new Date(lead.created_at).toLocaleString()}
               </p>
-              <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
+
+              <div style={{ display: "flex", gap: "10px", marginTop: "12px", flexWrap: "wrap" }}>
+                <button
+                  onClick={() => { setOpenReplyFor(openReplyFor === lead.id ? null : lead.id); setReplyText(""); }}
+                  style={{
+                    padding: "6px 14px", background: "var(--primary)", color: "#fff",
+                    border: "none", borderRadius: "var(--radius)", fontSize: "13px", cursor: "pointer",
+                  }}
+                >
+                  ✉ Reply
+                </button>
                 {!lead.is_contacted && (
                   <button
                     onClick={() => markContacted(lead.id)}
@@ -133,6 +181,44 @@ function LeadsContent() {
                   {retriaging === lead.id ? "Analyzing…" : "🤖 Re-run AI Triage"}
                 </button>
               </div>
+
+              {openReplyFor === lead.id && (
+                <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <textarea
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder={`Reply to ${lead.name} — this gets emailed to ${lead.email}`}
+                    rows={4}
+                    style={{
+                      width: "100%", padding: "10px 12px", borderRadius: "var(--radius)",
+                      border: "1px solid var(--border)", background: "var(--input-bg)",
+                      color: "var(--foreground)", fontSize: "13px", resize: "vertical",
+                    }}
+                  />
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      onClick={() => sendReply(lead.id)}
+                      disabled={sending || !replyText.trim()}
+                      style={{
+                        padding: "6px 14px", background: "var(--accent)", color: "#fff",
+                        border: "none", borderRadius: "var(--radius)", fontSize: "13px",
+                        cursor: sending ? "default" : "pointer", opacity: sending ? 0.6 : 1,
+                      }}
+                    >
+                      {sending ? "Sending…" : "Send Reply"}
+                    </button>
+                    <button
+                      onClick={() => { setOpenReplyFor(null); setReplyText(""); }}
+                      style={{
+                        padding: "6px 14px", background: "transparent", border: "1px solid var(--border)",
+                        color: "var(--foreground)", borderRadius: "var(--radius)", fontSize: "13px", cursor: "pointer",
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

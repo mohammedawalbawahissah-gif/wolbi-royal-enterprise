@@ -11,6 +11,7 @@ const NAV_LINKS = {
   ADMIN: [
     { href: "/dashboard/admin",       label: "Overview" },
     { href: "/dashboard/leads",       label: "Leads" },
+    { href: "/dashboard/teleconsultations", label: "Teleconsultations" },
     { href: "/dashboard/projects",    label: "Projects" },
     { href: "/dashboard/assignments", label: "Assignments" },
     { href: "/dashboard/blog",        label: "Blog" },
@@ -21,12 +22,14 @@ const NAV_LINKS = {
   ],
   MEDICAL: [
     { href: "/dashboard/medical",     label: "Medical Hub" },
+    { href: "/dashboard/teleconsultations", label: "Teleconsultations" },
     { href: "/dashboard/leads",       label: "Leads" },
     { href: "/dashboard/projects",    label: "Projects" },
     { href: "/dashboard/assignments", label: "Assignments" },
   ],
   VA: [
     { href: "/dashboard/va",          label: "VA Hub" },
+    { href: "/dashboard/teleconsultations", label: "Teleconsultations" },
     { href: "/dashboard/assignments", label: "Assignments" },
     { href: "/dashboard/projects",    label: "Projects" },
   ],

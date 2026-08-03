@@ -27,6 +27,7 @@ const NAV = [
   },
   { label: "Industries", href: "/industries" },
   { label: "Projects",   href: "/projects" },
+  { label: "Teleconsult", href: "/teleconsultation" },
   { label: "Partners",   href: "/partners" },
   { label: "Blog",       href: "/blog" },
   { label: "Schedule",   href: "/schedule" },

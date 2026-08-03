@@ -150,3 +150,24 @@ class Lead(models.Model):
             # or when a provider is slow/unreachable.
             threading.Thread(target=self._send_notification_email, daemon=True).start()
             threading.Thread(target=self._run_ai_triage, daemon=True).start()
+
+
+class LeadReply(models.Model):
+    """
+    A staff follow-up sent to a lead. Gives the dashboard an actual
+    conversation thread instead of just 'Mark Contacted' / 'Re-run AI
+    Triage', and doubles as an audit trail of who said what and when.
+    """
+    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name="replies")
+    staff = models.ForeignKey(
+        "accounts.User", on_delete=models.SET_NULL, null=True, related_name="lead_replies"
+    )
+    message = models.TextField()
+    email_sent = models.BooleanField(default=False)
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["sent_at"]
+
+    def __str__(self):
+        return f"Reply to {self.lead.name} at {self.sent_at:%Y-%m-%d %H:%M}"
