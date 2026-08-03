@@ -1,5 +1,13 @@
 # Teleconsultation feature — file map & setup
 
+# Teleconsultation feature — file map & setup
+
+> **Update:** `backend/leads/api/views.py` and `backend/config/settings.py` below now also
+> include a fix for the "Reply fails to send" 502 bug (the reply email was sent
+> synchronously, blocking the request until it hung past gunicorn's timeout —
+> now backgrounded, same pattern as everything else) plus a new `suggest_reply`
+> AI-drafting action, surfaced as an "✨ AI Draft" button in the leads dashboard.
+
 All paths below are relative to your existing repo roots (`backend/` and `frontend/`).
 Files marked (NEW) are brand new; everything else replaces an existing file at that exact path.
 

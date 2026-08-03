@@ -153,6 +153,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "resend"
 EMAIL_HOST_PASSWORD = config("RESEND_API_KEY", default="")
+EMAIL_TIMEOUT = 10
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@wolbiroyal.com")
 
 # ─── AI (Anthropic Claude) ─────────────────────────────────────────────────────
