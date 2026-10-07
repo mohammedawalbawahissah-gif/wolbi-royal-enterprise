@@ -71,7 +71,7 @@ function AdminContent() {
 
       <AIInsightsCard />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "20px", marginBottom: "32px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "20px", marginBottom: "32px" }}>
         <StatCard label="Total Leads"    value={analytics?.leads}       color="var(--primary)" />
         <StatCard label="New Leads"      value={analytics?.leads_new}   color="#f59e0b" />
         <StatCard label="Projects"       value={analytics?.projects}    color="var(--accent)" />

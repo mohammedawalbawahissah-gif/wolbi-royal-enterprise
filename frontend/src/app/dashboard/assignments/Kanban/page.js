@@ -38,7 +38,7 @@ function KanbanContent() {
         </Link>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(250px, 1fr))", gap: "16px", alignItems: "start", overflowX: "auto", paddingBottom: "12px" }}>
         {COLUMNS.map((col) => {
           const items = assignments.filter((a) => a.status === col.key);
           return (

@@ -91,8 +91,8 @@ function UsersContent() {
       ) : filtered.length === 0 ? (
         <p style={{ color: "var(--muted)" }}>No users found.</p>
       ) : (
-        <div style={{ background: "var(--card-bg)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow)", overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div style={{ background: "var(--card-bg)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow)", overflowX: "auto" }}>
+          <table style={{ width: "100%", minWidth: "640px", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--muted-bg)" }}>
                 {["Username", "Email", "Role", "Status", "Joined", ""].map((h) => (
