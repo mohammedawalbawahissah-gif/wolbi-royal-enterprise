@@ -2,11 +2,18 @@
 
 # Teleconsultation feature — file map & setup
 
-> **Update:** `backend/leads/api/views.py` and `backend/config/settings.py` below now also
-> include a fix for the "Reply fails to send" 502 bug (the reply email was sent
-> synchronously, blocking the request until it hung past gunicorn's timeout —
-> now backgrounded, same pattern as everything else) plus a new `suggest_reply`
-> AI-drafting action, surfaced as an "✨ AI Draft" button in the leads dashboard.
+> **Update 2:** email sending was switched from SMTP to Resend's HTTPS API
+> (`backend/core/services/mail_backend.py`, new file) because Railway blocks/
+> throttles outbound SMTP ports by default — that's why replies were timing
+> out ("Lead reply email failed for lead 8: timed out") even with correct
+> credentials. This affects every email in the app (lead notifications, lead
+> replies, teleconsultation notifications), not just the reply feature, since
+> they all go through Django's `send_mail()` → `EMAIL_BACKEND`.
+>
+> **Update 1:** `backend/leads/api/views.py` and `backend/config/settings.py`
+> include a fix for the earlier "Reply fails to send" 502 (the reply email
+> was sent synchronously, blocking the request — now backgrounded) plus a new
+> `suggest_reply` AI-drafting action ("✨ AI Draft" button in the leads dashboard).
 
 All paths below are relative to your existing repo roots (`backend/` and `frontend/`).
 Files marked (NEW) are brand new; everything else replaces an existing file at that exact path.
@@ -32,6 +39,7 @@ backend/accounts/migrations/0006_user_is_available_for_calls.py  (NEW)
 backend/config/settings.py                                        (replaces — registers app + DAILY_API_KEY)
 backend/config/urls.py                                            (replaces — routes /api/v1/teleconsultations/)
 
+backend/core/services/mail_backend.py                            (NEW — Resend HTTP API email backend)
 backend/core/api/views.py                                        (replaces — AI concierge site-wide context + escalation, from earlier in this session)
 backend/leads/models.py                                          (replaces — LeadReply model, from earlier)
 backend/leads/api/serializers.py                                 (replaces)

@@ -147,13 +147,9 @@ SIMPLE_JWT = {
 }
 
 # ─── Email via Resend ─────────────────────────────────────────────────────────
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.resend.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = "resend"
-EMAIL_HOST_PASSWORD = config("RESEND_API_KEY", default="")
-EMAIL_TIMEOUT = 10
+# ─── Email via Resend (HTTP API, not SMTP — see core/services/mail_backend.py) ─
+EMAIL_BACKEND = "core.services.mail_backend.ResendAPIBackend"
+RESEND_API_KEY = config("RESEND_API_KEY", default="")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@wolbiroyal.com")
 
 # ─── AI (Anthropic Claude) ─────────────────────────────────────────────────────
