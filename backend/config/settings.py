@@ -55,6 +55,14 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", default="http://localhost:3000", cast=Csv())
 CORS_ALLOW_CREDENTIALS = True
 
+# Origins allowed to POST to Django admin / session views over HTTPS
+# (needed once the site is served from https://wolbiroyal.com)
+CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", default="http://localhost:3000", cast=Csv())
+
+# Railway terminates TLS at its edge and forwards plain HTTP to gunicorn;
+# trust its X-Forwarded-Proto header so Django knows the request was HTTPS.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [

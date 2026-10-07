@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# python virtualenvs (never commit)
+venv/
+.venv/
+!.env.local.example
