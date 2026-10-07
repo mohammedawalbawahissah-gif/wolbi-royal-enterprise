@@ -12,6 +12,7 @@ import { ThemeProvider, useTheme } from "@/components/ThemeProvider";
 const NAV_LINKS = {
   ADMIN: [
     { href: "/dashboard/admin",       label: "Overview" },
+    { href: "/dashboard/apps",        label: "My Apps" },
     { href: "/dashboard/leads",       label: "Leads" },
     { href: "/dashboard/teleconsultations", label: "Teleconsultations" },
     { href: "/dashboard/projects",    label: "Projects" },
@@ -24,6 +25,7 @@ const NAV_LINKS = {
   ],
   MEDICAL: [
     { href: "/dashboard/medical",     label: "Medical Hub" },
+    { href: "/dashboard/apps",        label: "My Apps" },
     { href: "/dashboard/teleconsultations", label: "Teleconsultations" },
     { href: "/dashboard/leads",       label: "Leads" },
     { href: "/dashboard/projects",    label: "Projects" },
@@ -31,18 +33,21 @@ const NAV_LINKS = {
   ],
   VA: [
     { href: "/dashboard/va",          label: "VA Hub" },
+    { href: "/dashboard/apps",        label: "My Apps" },
     { href: "/dashboard/teleconsultations", label: "Teleconsultations" },
     { href: "/dashboard/assignments", label: "Assignments" },
     { href: "/dashboard/projects",    label: "Projects" },
   ],
   FOUNDATION: [
     { href: "/dashboard/foundation",  label: "Foundation Hub" },
+    { href: "/dashboard/apps",        label: "My Apps" },
     { href: "/dashboard/assignments", label: "Assignments" },
     { href: "/dashboard/projects",    label: "Projects" },
     { href: "/dashboard/blog",        label: "Blog" },
   ],
   CLIENT: [
     { href: "/dashboard/client",      label: "My Overview" },
+    { href: "/dashboard/apps",        label: "My Apps" },
     { href: "/dashboard/projects",    label: "My Projects" },
   ],
 };

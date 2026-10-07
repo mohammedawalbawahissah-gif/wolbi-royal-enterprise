@@ -16,6 +16,7 @@ const PUBLIC_PREFIXES = [
   "/solutions",
   "/industries",
   "/projects",
+  "/apps",
   "/blog",
   "/contact",
   "/partners",

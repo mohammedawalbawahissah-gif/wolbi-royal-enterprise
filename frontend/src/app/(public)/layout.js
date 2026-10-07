@@ -27,6 +27,7 @@ const NAV = [
   },
   { label: "Industries", href: "/industries" },
   { label: "Projects",   href: "/projects" },
+  { label: "Apps",       href: "/apps" },
   { label: "Teleconsult", href: "/teleconsultation" },
   { label: "Partners",   href: "/partners" },
   { label: "Blog",       href: "/blog" },
@@ -271,7 +272,7 @@ function Footer() {
       <div className="footer-grid">
         <div>
           <p className="footer-brand-name">Wolbi Royal Enterprise</p>
-          <p className="footer-brand-desc">Technology, healthcare, virtual solutions, and community impact — building Africa's future through purposeful innovation rooted in lived experience.</p>
+          <p className="footer-brand-desc">Technology, healthcare, virtual solutions, and community impact — building Africa&apos;s future through purposeful innovation rooted in lived experience.</p>
         </div>
         <div>
           <p className="footer-col-title">Divisions</p>
@@ -283,7 +284,7 @@ function Footer() {
         </div>
         <div>
           <p className="footer-col-title">Company</p>
-          {[["About","/about"],["Founder","/founder"],["Partners","/partners"],["Projects","/projects"],["Blog","/blog"],["Schedule a Call","/schedule"],["Contact","/contact"]].map(([l,h]) => <Link key={h} href={h} className="footer-link">{l}</Link>)}
+          {[["About","/about"],["Founder","/founder"],["Partners","/partners"],["Projects","/projects"],["Apps","/apps"],["Blog","/blog"],["Schedule a Call","/schedule"],["Contact","/contact"]].map(([l,h]) => <Link key={h} href={h} className="footer-link">{l}</Link>)}
         </div>
       </div>
       <div className="footer-bottom">

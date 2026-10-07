@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "foundation",
     "testimonials",
     "teleconsultations",
+    "portal",
 ]
 
 MIDDLEWARE = [

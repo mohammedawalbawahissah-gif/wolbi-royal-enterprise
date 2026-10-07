@@ -23,6 +23,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/industries/construction",
     "/industries/technology",
     "/projects",
+    "/apps",
     "/blog",
   ];
 
