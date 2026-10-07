@@ -7,7 +7,7 @@ class AssignmentCommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AssignmentComment
-        fields = ("id", "author", "author_name", "comment", "created_at")
+        fields = ("id", "assignment", "author", "author_name", "comment", "created_at")
         read_only_fields = ("author", "created_at")
 
 

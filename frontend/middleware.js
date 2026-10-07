@@ -20,6 +20,7 @@ const PUBLIC_PREFIXES = [
   "/contact",
   "/partners",
   "/schedule",
+  "/teleconsultation",
   "/api",
   "/_next",
   "/favicon",

@@ -20,6 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
             "bio",
             "is_active",
             "is_available_for_calls",
+            "email_notifications",
             "date_joined",
         )
 
@@ -122,6 +123,7 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
             "bio",
             "profile_image",
             "is_available_for_calls",
+            "email_notifications",
         )
 
 

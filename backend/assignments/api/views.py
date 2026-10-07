@@ -10,7 +10,7 @@ from .serializers import (
     AssignmentCommentSerializer,
 )
 from accounts.permissions import IsStaff
-from notifications.models import Notification
+from notifications import events
 from core.services.ai import ask_ai, ask_ai_json, AIServiceUnavailable
 
 
@@ -29,19 +29,17 @@ class AssignmentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         assignment = serializer.save(assigned_by=self.request.user)
-        Notification.objects.create(
-            user=assignment.assigned_to,
-            title="New Assignment",
-            message=f"You have been assigned: {assignment.title}",
-        )
+        events.assignment_assigned(assignment, self.request.user)
 
     def perform_update(self, serializer):
+        before_assignee = serializer.instance.assigned_to_id
+        before_status = serializer.instance.status
         assignment = serializer.save()
-        Notification.objects.create(
-            user=assignment.assigned_to,
-            title="Assignment Updated",
-            message=f"Assignment updated: {assignment.title}",
-        )
+        # Only notify about changes people care about, not every edit
+        if assignment.assigned_to_id != before_assignee:
+            events.assignment_assigned(assignment, self.request.user)
+        elif assignment.status != before_status:
+            events.assignment_status_changed(assignment, self.request.user)
 
     @action(detail=False, methods=["post"], permission_classes=[IsStaff])
     def suggest_assignee(self, request):
@@ -117,4 +115,5 @@ class AssignmentCommentCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        comment = serializer.save(author=self.request.user)
+        events.assignment_commented(comment)

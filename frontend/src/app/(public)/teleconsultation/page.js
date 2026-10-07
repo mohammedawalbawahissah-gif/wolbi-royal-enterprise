@@ -14,9 +14,33 @@ export default function TeleconsultationPage() {
   const [error, setError] = useState("");
   const [session, setSession] = useState(null); // { id, status, ... }
   const [call, setCall] = useState(null); // { room_url, token }
+  const [accessToken, setAccessToken] = useState(""); // from the link in the client's email
   const pollRef = useRef(null);
 
   useEffect(() => () => clearInterval(pollRef.current), []);
+
+  const fetchStatus = async (id) => {
+    const res = await fetch(`${API_URL}/teleconsultations/${id}/status/`);
+    if (!res.ok) throw new Error("not found");
+    return res.json();
+  };
+
+  // Returning from an email link: /teleconsultation?session=12&token=abc
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("session");
+    const token = params.get("token");
+    if (!id || !token) return;
+    setAccessToken(token);
+    fetchStatus(id)
+      .then((data) => {
+        setMode(data.mode);
+        setSession(data);
+        if (data.status === "REQUESTED") startPolling(data.id);
+      })
+      .catch(() => setError("We couldn't find that session. Please book a new one below."));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -45,12 +69,9 @@ export default function TeleconsultationPage() {
   const startPolling = (id) => {
     pollRef.current = setInterval(async () => {
       try {
-        const res = await fetch(`${API_URL}/teleconsultations/${id}/status/`);
-        const data = await res.json();
+        const data = await fetchStatus(id);
         setSession((s) => ({ ...s, ...data }));
-        if (data.status === "CLAIMED") {
-          clearInterval(pollRef.current);
-        } else if (data.status === "CANCELLED") {
+        if (["CLAIMED", "CANCELLED", "COMPLETED"].includes(data.status)) {
           clearInterval(pollRef.current);
         }
       } catch { /* keep trying */ }
@@ -62,7 +83,7 @@ export default function TeleconsultationPage() {
       const res = await fetch(`${API_URL}/teleconsultations/${session.id}/join/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.email }),
+        body: JSON.stringify({ email: form.email, token: accessToken }),
       });
       const data = await res.json();
       if (res.ok) setCall(data);
@@ -86,6 +107,27 @@ export default function TeleconsultationPage() {
     );
   }
 
+  // ── Session finished or cancelled ────────────────────────────────────
+  if (session && ["COMPLETED", "CANCELLED"].includes(session.status)) {
+    const done = session.status === "COMPLETED";
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "120px 2rem", textAlign: "center" }}>
+        <div>
+          <h2 style={{ fontSize: "24px", fontWeight: 800, marginBottom: "12px" }}>
+            {done ? "This session has ended" : "This session was cancelled"}
+          </h2>
+          <p style={{ color: "var(--muted)", fontSize: "15px", maxWidth: "420px", margin: "0 auto 24px" }}>
+            {done ? "Thank you for speaking with us. Reply to your confirmation email if you have follow-up questions."
+                  : "Sorry this one couldn't go ahead. You're welcome to book a new session."}
+          </p>
+          <a href="/teleconsultation" style={{ display: "inline-block", padding: "12px 28px", background: "var(--accent)", color: "#fff", borderRadius: "8px", fontWeight: 700, textDecoration: "none" }}>
+            Book a new session
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   // ── Waiting for staff to claim an instant request ────────────────────
   if (session && mode === "INSTANT" && session.status !== "CLAIMED") {
     return (
@@ -95,7 +137,8 @@ export default function TeleconsultationPage() {
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           <h2 style={{ fontSize: "24px", fontWeight: 800, marginBottom: "12px" }}>Connecting you with our team…</h2>
           <p style={{ color: "var(--muted)", fontSize: "15px", maxWidth: "420px", margin: "0 auto" }}>
-            We've notified our team. This page will update automatically the moment someone's ready — no need to refresh.
+            We&apos;ve notified our team. This page will update automatically the moment someone&apos;s ready — no need to refresh.
+            We&apos;ve also emailed you a link back to this page, and we&apos;ll email you again when someone joins.
           </p>
         </div>
       </div>
@@ -125,10 +168,10 @@ export default function TeleconsultationPage() {
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "120px 2rem", textAlign: "center" }}>
         <div>
           <CheckCircle size={56} color="var(--accent)" style={{ margin: "0 auto 24px", display: "block" }} />
-          <h2 style={{ fontSize: "28px", fontWeight: 800, marginBottom: "12px" }}>Consultation Requested</h2>
+          <h2 style={{ fontSize: "28px", fontWeight: 800, marginBottom: "12px" }}>Consultation Booked</h2>
           <p style={{ color: "var(--muted)", fontSize: "16px", maxWidth: "460px", lineHeight: 1.7, margin: "0 auto 24px" }}>
-            We'll confirm your slot by email shortly. Come back to this page at your scheduled time and refresh —
-            you'll see a "Join Call" button once our team is ready.
+            We've emailed your booking details{form.email ? ` to ${form.email}` : ""}. At your scheduled time, our team will open
+            the video room and email you a link to join — you can also come back to this page from the link in your email.
           </p>
           <a href="/" style={{ display: "inline-block", padding: "12px 28px", background: "var(--primary)", color: "#fff", borderRadius: "8px", fontWeight: 600, textDecoration: "none" }}>Back to Home</a>
         </div>

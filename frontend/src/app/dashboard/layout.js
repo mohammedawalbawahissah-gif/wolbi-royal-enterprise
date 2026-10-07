@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
 import LogoutButton from "@/components/LogoutButton";
+import NotificationBell from "@/components/NotificationBell";
 import { ThemeProvider, useTheme } from "@/components/ThemeProvider";
 
 const NAV_LINKS = {
@@ -155,7 +156,10 @@ function DashboardContent({ children }) {
   return (
     <div style={{ display: "flex" }}>
       <Sidebar user={user} />
-      <main style={{ marginLeft: "240px", flex: 1, minHeight: "100vh", padding: "32px", background: "var(--muted-bg)" }}>
+      <main style={{ marginLeft: "240px", flex: 1, minHeight: "100vh", padding: "20px 32px 32px", background: "var(--muted-bg)" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+          {user && <NotificationBell />}
+        </div>
         {children}
       </main>
     </div>

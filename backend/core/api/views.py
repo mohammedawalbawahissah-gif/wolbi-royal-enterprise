@@ -19,7 +19,6 @@ from newsletter.models import Subscriber
 from testimonials.models import Testimonial
 from industries.models import Industry
 from foundation.models import Program, FoundationEvent
-from notifications.models import Notification
 
 
 class SiteConfigurationViewSet(viewsets.ModelViewSet):
@@ -214,26 +213,6 @@ def invalidate_site_context_cache():
     cache.delete(CONTEXT_CACHE_KEY)
 
 
-def _notify_staff_of_escalation(lead):
-    """Creates an in-app Notification for every ADMIN user pointing at the
-    new escalated Lead. Email notification is already handled separately
-    by Lead.save() itself."""
-    admins = User.objects.filter(role="ADMIN")
-    notifications = [
-        Notification(
-            user=admin,
-            title="Ask Wolbi escalated a conversation",
-            message=(
-                f"{lead.name} ({lead.email}) needs follow-up — "
-                f"{lead.get_inquiry_type_display()}: {lead.subject}"
-            ),
-        )
-        for admin in admins
-    ]
-    if notifications:
-        Notification.objects.bulk_create(notifications)
-
-
 class AIConciergeView(APIView):
     """
     Public "Ask Wolbi" chat concierge.
@@ -248,8 +227,8 @@ class AIConciergeView(APIView):
     human (explicit request, complaint, pricing/contract question, or
     anything outside its grounded context) and has collected at least a name
     + email from the visitor, it creates a real Lead record. That reuses the
-    existing Lead pipeline (staff email notification + AI triage), and this
-    view additionally pushes an in-app Notification to every admin user.
+    existing Lead pipeline: client confirmation email, staff in-app + email
+    alerts (notifications.events.lead_created), and AI triage.
     """
     permission_classes = [AllowAny]
 
@@ -324,7 +303,6 @@ class AIConciergeView(APIView):
                 message=data.get("summary") or message,
                 inquiry_type=inquiry_type,
             )
-            _notify_staff_of_escalation(lead)
             escalated = True
 
         return Response({"reply": reply, "escalated": escalated})

@@ -19,9 +19,13 @@ class SubscribeView(generics.CreateAPIView):
             email=email,
             defaults={"first_name": request.data.get("first_name", ""), "is_active": True},
         )
+        was_inactive = not created and not subscriber.is_active
         if not created:
             subscriber.is_active = True
             subscriber.save()
+        if created or was_inactive:
+            from notifications import events
+            events.newsletter_subscribed(subscriber)  # welcome email, once per (re)subscription
         return Response({"message": "Subscribed successfully."}, status=status.HTTP_200_OK)
 
 

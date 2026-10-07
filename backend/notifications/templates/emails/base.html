@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>{{ subject }}</title>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;-webkit-text-size-adjust:100%;">
+{% if preheader %}<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f1f5f9;">{{ preheader }}</div>{% endif %}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:#1e3a5f;padding:24px 32px;">
+            <a href="{{ site_url }}" style="text-decoration:none;">
+              <div style="font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:800;color:#ffffff;letter-spacing:-0.3px;">Wolbi Royal</div>
+              <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;color:#9fb3cc;letter-spacing:2px;text-transform:uppercase;margin-top:2px;">Enterprise</div>
+            </a>
+          </td>
+        </tr>
+        <tr><td style="height:4px;background:#16a34a;font-size:0;line-height:0;">&nbsp;</td></tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:32px;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+            {% if eyebrow %}<p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#16a34a;">{{ eyebrow }}</p>{% endif %}
+            <h1 style="margin:0 0 20px;font-size:22px;line-height:1.3;font-weight:800;color:#1e3a5f;">{{ heading }}</h1>
+
+            {% for p in paragraphs %}
+            <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#334155;">{{ p|linebreaksbr }}</p>
+            {% endfor %}
+
+            {% if details %}
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 24px;border:1px solid #e2e8f0;border-radius:8px;border-collapse:separate;">
+              {% for label, value in details %}
+              <tr>
+                <td style="padding:10px 14px;font-size:13px;color:#64748b;width:38%;vertical-align:top;{% if not forloop.last %}border-bottom:1px solid #e2e8f0;{% endif %}">{{ label }}</td>
+                <td style="padding:10px 14px;font-size:14px;color:#0f172a;vertical-align:top;{% if not forloop.last %}border-bottom:1px solid #e2e8f0;{% endif %}">{{ value|linebreaksbr }}</td>
+              </tr>
+              {% endfor %}
+            </table>
+            {% endif %}
+
+            {% if quote %}
+            <div style="margin:0 0 24px;padding:14px 16px;background:#f8fafc;border-left:3px solid #16a34a;border-radius:4px;font-size:14px;line-height:1.6;color:#334155;">{{ quote|linebreaksbr }}</div>
+            {% endif %}
+
+            {% if cta_url %}
+            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 24px;">
+              <tr>
+                <td style="background:#16a34a;border-radius:8px;">
+                  <a href="{{ cta_url }}" style="display:inline-block;padding:13px 26px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;">{{ cta_label }}</a>
+                </td>
+              </tr>
+            </table>
+            {% endif %}
+
+            {% for p in closing %}
+            <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#334155;">{{ p|linebreaksbr }}</p>
+            {% endfor %}
+
+            {% if signoff %}
+            <p style="margin:20px 0 0;font-size:15px;line-height:1.6;color:#334155;">{{ signoff|linebreaksbr }}</p>
+            {% endif %}
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:20px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#64748b;">
+            {% if footer_note %}<p style="margin:0 0 8px;">{{ footer_note }}</p>{% endif %}
+            <p style="margin:0;">Wolbi Royal Enterprise · Tamale, Ghana · <a href="{{ site_url }}" style="color:#1e3a5f;">wolbiroyal.com</a></p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

@@ -69,6 +69,11 @@ class User(AbstractUser):
         blank=True
     )
 
+    email_notifications = models.BooleanField(
+        default=True,
+        help_text="Staff toggle — also send dashboard notifications to this user's email address."
+    )
+
     is_available_for_calls = models.BooleanField(
         default=False,
         help_text="Staff toggle — when on, this user can be matched to instant teleconsultation requests."

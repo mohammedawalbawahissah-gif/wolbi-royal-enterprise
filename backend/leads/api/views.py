@@ -1,8 +1,5 @@
 import logging
-import threading
 
-from django.conf import settings
-from django.core.mail import send_mail
 from rest_framework import viewsets, generics
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import action
@@ -88,8 +85,8 @@ class LeadViewSet(viewsets.ModelViewSet):
         """
         Sends an actual email reply to the lead and records it as a
         LeadReply. The email send itself runs in a background thread
-        (matching the pattern Lead._send_notification_email already uses)
-        so a slow/hanging SMTP connection can never block this request —
+        (via notifications.services.send_email) so a slow/hanging
+        provider can never block this request —
         that was the cause of the 502s: send_mail() was blocking the
         request/response cycle directly, and a hung SMTP connection dragged
         it past gunicorn's worker timeout, which Railway's edge then
@@ -105,21 +102,8 @@ class LeadViewSet(viewsets.ModelViewSet):
 
         reply = LeadReply.objects.create(lead=lead, staff=request.user, message=message)
 
-        def _send():
-            try:
-                send_mail(
-                    subject=f"Re: {lead.subject}",
-                    message=message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[lead.email],
-                    fail_silently=False,
-                )
-                reply.email_sent = True
-                reply.save(update_fields=["email_sent"])
-            except Exception as e:
-                logger.warning(f"Lead reply email failed for lead {lead.pk}: {e}")
-
-        threading.Thread(target=_send, daemon=True).start()
+        from notifications import events
+        events.lead_reply_sent(reply)  # emailed in the background; sets reply.email_sent on success
 
         if not lead.is_contacted:
             lead.is_contacted = True

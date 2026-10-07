@@ -201,7 +201,23 @@ SIMPLE_JWT = {
 # ─── Email via Resend (HTTP API, not SMTP — see core/services/mail_backend.py) ─
 EMAIL_BACKEND = "core.services.mail_backend.ResendAPIBackend"
 RESEND_API_KEY = config("RESEND_API_KEY", default="")
-DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@wolbiroyal.com")
+# Sender shown to recipients. The domain (wolbiroyal.com) must be verified in Resend.
+EMAIL_FROM_NAME = config("EMAIL_FROM_NAME", default="Wolbi Royal Enterprise")
+_from_address = config("DEFAULT_FROM_EMAIL", default="noreply@wolbiroyal.com")
+DEFAULT_FROM_EMAIL = _from_address if "<" in _from_address else f"{EMAIL_FROM_NAME} <{_from_address}>"
+# Where client replies land — a real inbox someone reads (noreply@ is never read).
+REPLY_TO_EMAIL = config("REPLY_TO_EMAIL", default="")
+# Extra inbox(es) that receive a copy of every staff alert (new requests,
+# bookings, volunteers), on top of each staff user's own email. Comma-separated.
+STAFF_ALERT_EMAILS = config("STAFF_ALERT_EMAILS", default="", cast=Csv())
+# Public site, used to build links inside emails.
+SITE_URL = config("SITE_URL", default="https://wolbiroyal.com").rstrip("/")
+# Send emails in a background thread so requests never wait on Resend.
+# Tests set this to False to send synchronously.
+EMAIL_ASYNC = config("EMAIL_ASYNC", default=True, cast=bool)
+if not RESEND_API_KEY and DEBUG:
+    # Local dev without a Resend key: print emails to the terminal instead.
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # ─── AI (Anthropic Claude) ─────────────────────────────────────────────────────
 ANTHROPIC_API_KEY = config("ANTHROPIC_API_KEY", default="")

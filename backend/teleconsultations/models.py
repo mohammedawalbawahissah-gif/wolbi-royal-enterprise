@@ -1,4 +1,10 @@
+import secrets
+
 from django.db import models
+
+
+def _new_access_token():
+    return secrets.token_urlsafe(24)
 
 
 class ConsultationSession(models.Model):
@@ -43,6 +49,10 @@ class ConsultationSession(models.Model):
         "accounts.User", on_delete=models.SET_NULL, null=True, blank=True,
         related_name="teleconsultations",
     )
+
+    # Secret included in the client's email links so they can return to the
+    # booking page and join their call without retyping their email.
+    access_token = models.CharField(max_length=64, default=_new_access_token, editable=False)
 
     room_name = models.CharField(max_length=200, blank=True)
     room_url = models.URLField(blank=True)

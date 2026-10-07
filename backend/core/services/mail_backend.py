@@ -29,13 +29,26 @@ class ResendAPIBackend(BaseEmailBackend):
         sent = 0
 
         for message in email_messages:
+            payload = {
+                "from": message.from_email,
+                "to": list(message.to),
+                "subject": message.subject,
+                "text": message.body,
+            }
+            # HTML version (EmailMultiAlternatives.attach_alternative)
+            for content, mimetype in getattr(message, "alternatives", []) or []:
+                if mimetype == "text/html":
+                    payload["html"] = content
+            if message.cc:
+                payload["cc"] = list(message.cc)
+            if message.bcc:
+                payload["bcc"] = list(message.bcc)
+            if message.reply_to:
+                payload["reply_to"] = list(message.reply_to)
             try:
-                resend.Emails.send({
-                    "from": message.from_email,
-                    "to": list(message.to),
-                    "subject": message.subject,
-                    "text": message.body,
-                })
+                result = resend.Emails.send(payload)
+                # Expose Resend's id so callers (EmailLog) can record it
+                message.provider_id = (result or {}).get("id", "") if isinstance(result, dict) else ""
                 sent += 1
             except Exception as e:
                 logger.warning(f"Resend API email failed: {e}")

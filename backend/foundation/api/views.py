@@ -34,6 +34,11 @@ class VolunteerCreateView(generics.CreateAPIView):
     serializer_class = VolunteerSerializer
     permission_classes = [AllowAny]
 
+    def perform_create(self, serializer):
+        from notifications import events
+        volunteer = serializer.save()
+        events.volunteer_applied(volunteer)
+
 
 class VolunteerListView(generics.ListAPIView):
     queryset = Volunteer.objects.all().order_by("-created_at")

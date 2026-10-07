@@ -1,8 +1,7 @@
 import logging
+import secrets
 import threading
 
-from django.conf import settings
-from django.core.mail import send_mail
 from rest_framework import viewsets, generics
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
@@ -17,7 +16,7 @@ from .serializers import (
 )
 from accounts.permissions import IsStaff
 from accounts.models import User
-from notifications.models import Notification
+from notifications import events
 from teleconsultations.services import (
     create_room, create_meeting_token, delete_room, DailyServiceUnavailable,
 )
@@ -31,40 +30,13 @@ _DIVISION_ROLE = {
 }
 
 
-def _notify_available_staff(session):
-    """Runs in a background thread (same pattern as Lead's own notification
-    email) so the visitor's request never waits on email/notification
-    delivery. Notifies staff in the matching division who've marked
-    themselves available for calls; falls back to all staff in that
-    division plus admins if nobody's currently marked available, so
-    instant requests are never silently dropped."""
-    try:
-        role = _DIVISION_ROLE.get(session.division)
-        available = User.objects.filter(role=role, is_available_for_calls=True)
-        targets = list(available) or list(User.objects.filter(role__in=[role, "ADMIN"]))
-
-        Notification.objects.bulk_create([
-            Notification(
-                user=u,
-                title=f"New {session.get_mode_display().lower()} teleconsultation request",
-                message=f"{session.name} needs a {session.get_division_display()} consultation: {session.reason[:120]}",
-            )
-            for u in targets
-        ])
-
-        send_mail(
-            subject=f"[Wolbi] Teleconsultation request — {session.get_division_display()}",
-            message=(
-                f"Name: {session.name}\nEmail: {session.email}\nPhone: {session.phone or 'N/A'}\n"
-                f"Mode: {session.get_mode_display()}\n"
-                f"Scheduled: {session.scheduled_time or 'N/A'}\n\nReason:\n{session.reason}"
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[settings.DEFAULT_FROM_EMAIL],
-            fail_silently=True,
-        )
-    except Exception as e:
-        logger.warning(f"Teleconsultation notification failed for session {session.pk}: {e}")
+def _staff_for_session(session):
+    """Staff in the matching division who've marked themselves available
+    for calls; falls back to all staff in that division plus admins if
+    nobody's currently available, so requests are never silently dropped."""
+    role = _DIVISION_ROLE.get(session.division)
+    available = list(User.objects.filter(role=role, is_active=True, is_available_for_calls=True))
+    return available or list(User.objects.filter(role__in=[role, "ADMIN"], is_active=True))
 
 
 class ConsultationRequestView(generics.CreateAPIView):
@@ -75,7 +47,8 @@ class ConsultationRequestView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         session = serializer.save()
-        threading.Thread(target=_notify_available_staff, args=(session,), daemon=True).start()
+        # Client confirmation + staff alerts; emails go out in the background
+        events.consultation_requested(session, _staff_for_session(session))
 
 
 class ConsultationStatusView(generics.RetrieveAPIView):
@@ -100,7 +73,11 @@ class ConsultationJoinView(APIView):
         except ConsultationSession.DoesNotExist:
             return Response({"error": "Session not found"}, status=404)
 
-        if (request.data.get("email") or "").strip().lower() != session.email.lower():
+        # Either the email they booked with, or the secret token from their email link
+        token = (request.data.get("token") or "").strip()
+        email_ok = (request.data.get("email") or "").strip().lower() == session.email.lower()
+        token_ok = bool(token) and secrets.compare_digest(token, session.access_token)
+        if not (email_ok or token_ok):
             return Response({"error": "Email does not match this session"}, status=403)
 
         if session.status != ConsultationSession.Status.CLAIMED or not session.room_name:
@@ -146,6 +123,7 @@ class StaffConsultationViewSet(viewsets.ModelViewSet):
         session.room_url = room["url"]
         session.status = ConsultationSession.Status.CLAIMED
         session.save(update_fields=["assigned_staff", "room_name", "room_url", "status", "updated_at"])
+        events.consultation_claimed(session)
         return Response(ConsultationSessionSerializer(session).data)
 
     @action(detail=True, methods=["post"])
@@ -167,6 +145,7 @@ class StaffConsultationViewSet(viewsets.ModelViewSet):
         session.save(update_fields=["status", "updated_at"])
         if session.room_name:
             threading.Thread(target=delete_room, args=(session.room_name,), daemon=True).start()
+        events.consultation_completed(session)
         return Response(ConsultationSessionSerializer(session).data)
 
     @action(detail=True, methods=["post"])
@@ -176,4 +155,5 @@ class StaffConsultationViewSet(viewsets.ModelViewSet):
         session.save(update_fields=["status", "updated_at"])
         if session.room_name:
             threading.Thread(target=delete_room, args=(session.room_name,), daemon=True).start()
+        events.consultation_cancelled(session)
         return Response(ConsultationSessionSerializer(session).data)
