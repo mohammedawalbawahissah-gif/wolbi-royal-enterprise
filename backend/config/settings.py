@@ -21,8 +21,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "django_filters",
-    "cloudinary",
-    "cloudinary_storage",
+    "storages",
 
     "core",
     "blog",
@@ -112,26 +111,70 @@ TIME_ZONE = "Africa/Accra"
 USE_I18N = True
 USE_TZ = True
 
-# ─── Static Files ─────────────────────────────────────────────────────────────
+# ─── Static & Media Storage ───────────────────────────────────────────────────
+# Django 5.1+ removed DEFAULT_FILE_STORAGE / STATICFILES_STORAGE — the STORAGES
+# dict below is the only setting Django reads. (The old Cloudinary setting was
+# silently ignored, so uploads were landing on Railway's ephemeral disk.)
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
-# ─── Cloudinary Media Storage ─────────────────────────────────────────────────
-CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": config("CLOUDINARY_CLOUD_NAME", default=""),
-    "API_KEY":    config("CLOUDINARY_API_KEY",    default=""),
-    "API_SECRET": config("CLOUDINARY_API_SECRET", default=""),
-}
+# Cloudflare R2 (S3-compatible). Media goes to R2 when the credentials are set;
+# otherwise it falls back to the local media/ folder (handy for offline dev).
+R2_ACCOUNT_ID        = config("R2_ACCOUNT_ID", default="")
+R2_ACCESS_KEY_ID     = config("R2_ACCESS_KEY_ID", default="")
+R2_SECRET_ACCESS_KEY = config("R2_SECRET_ACCESS_KEY", default="")
+R2_BUCKET_NAME       = config("R2_BUCKET_NAME", default="")
+# Public host serving the bucket, e.g. media.wolbiroyal.com (custom domain
+# connected to the bucket) or pub-xxxx.r2.dev. Leave empty for a private bucket:
+# files are then served through signed URLs that expire after R2_URL_EXPIRY secs.
+R2_PUBLIC_DOMAIN     = config("R2_PUBLIC_DOMAIN", default="").removeprefix("https://").rstrip("/")
+R2_URL_EXPIRY        = config("R2_URL_EXPIRY", default=3600, cast=int)
+# Override only to point at another S3-compatible endpoint (e.g. local testing)
+R2_ENDPOINT_URL      = config(
+    "R2_ENDPOINT_URL",
+    default=f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com" if R2_ACCOUNT_ID else "",
+)
 
-_USE_CLOUDINARY = config("CLOUDINARY_CLOUD_NAME", default="")
+USE_R2 = bool(R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY and R2_BUCKET_NAME and R2_ENDPOINT_URL)
 
-if _USE_CLOUDINARY:
-    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
-    MEDIA_URL = "/media/"
+if USE_R2:
+    from botocore.config import Config as _BotoConfig
+
+    _media_storage = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "bucket_name": R2_BUCKET_NAME,
+            "endpoint_url": R2_ENDPOINT_URL,
+            "access_key": R2_ACCESS_KEY_ID,
+            "secret_key": R2_SECRET_ACCESS_KEY,
+            "region_name": "auto",
+            "default_acl": None,          # R2 has no per-object ACLs
+            "file_overwrite": False,      # same filename → unique suffix, never clobber
+            "custom_domain": R2_PUBLIC_DOMAIN or None,
+            "querystring_auth": not R2_PUBLIC_DOMAIN,
+            "querystring_expire": R2_URL_EXPIRY,
+            "object_parameters": {"CacheControl": "public, max-age=86400"},
+            # (django-storages ignores its own signature_version/addressing_style
+            # options once client_config is given, so they live here.)
+            # Newer boto3 adds checksum headers by default; only send them when
+            # an operation requires it to stay compatible with R2.
+            "client_config": _BotoConfig(
+                signature_version="s3v4",
+                s3={"addressing_style": "path"},
+                request_checksum_calculation="when_required",
+                response_checksum_validation="when_required",
+            ),
+        },
+    }
 else:
-    MEDIA_URL = "/media/"
-    MEDIA_ROOT = BASE_DIR / "media"
+    _media_storage = {"BACKEND": "django.core.files.storage.FileSystemStorage"}
+
+STORAGES = {
+    "default": _media_storage,
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
 
 # ─── REST Framework ───────────────────────────────────────────────────────────
 REST_FRAMEWORK = {
