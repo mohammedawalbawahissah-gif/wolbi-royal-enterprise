@@ -1,4 +1,5 @@
 import logging
+import secrets
 from datetime import timedelta
 
 import requests
@@ -8,6 +9,9 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 DAILY_API_BASE = "https://api.daily.co/v1"
+
+# Rooms outlive the booked slot by this much, so a call that overruns is not cut off.
+ROOM_BUFFER_MINUTES = 120
 
 
 class DailyServiceUnavailable(Exception):
@@ -23,18 +27,18 @@ def _headers():
     }
 
 
-def create_room(session_id, expires_minutes=90):
+def create_room(session_id, expires_at):
     """
-    Creates a Daily.co room for a single consultation session. Rooms
-    auto-expire (Daily deletes them server-side) so we never accumulate
-    stale rooms even if a session is abandoned.
+    Creates a Daily.co room for one consultation. Rooms auto-expire at
+    `expires_at` (Daily deletes them server-side) so abandoned sessions never
+    leave stale rooms behind. Each room gets a unique name, so a replacement
+    room can always be created for the same session.
     """
-    exp = int((timezone.now() + timedelta(minutes=expires_minutes)).timestamp())
     payload = {
-        "name": f"wolbi-teleconsult-{session_id}",
+        "name": f"wolbi-tc-{session_id}-{secrets.token_hex(3)}",
         "privacy": "private",
         "properties": {
-            "exp": exp,
+            "exp": int(expires_at.timestamp()),
             "enable_chat": True,
             "enable_screenshare": True,
             "enable_knocking": False,
@@ -50,15 +54,16 @@ def create_room(session_id, expires_minutes=90):
         raise DailyServiceUnavailable("Couldn't set up the video room. Please try again shortly.")
 
 
-def create_meeting_token(room_name, user_name, is_owner=False):
-    """Short-lived token so each participant joins with their name attached,
-    and staff join with owner privileges (can end the call for everyone)."""
+def create_meeting_token(room_name, user_name, is_owner=False, expires_at=None):
+    """Token so each participant joins with their name attached, and staff
+    join with owner privileges. Valid until the room itself expires."""
+    expires_at = expires_at or (timezone.now() + timedelta(minutes=180))
     payload = {
         "properties": {
             "room_name": room_name,
             "user_name": user_name,
             "is_owner": is_owner,
-            "exp": int((timezone.now() + timedelta(minutes=120)).timestamp()),
+            "exp": int(expires_at.timestamp()),
         }
     }
     try:
@@ -77,3 +82,30 @@ def delete_room(room_name):
         requests.delete(f"{DAILY_API_BASE}/rooms/{room_name}", headers=_headers(), timeout=10)
     except Exception as e:
         logger.info(f"Daily room cleanup skipped for {room_name}: {e}")
+
+
+def ensure_room(session):
+    """
+    Make sure `session` has a live Daily room, creating (or replacing an
+    expiring one) when needed. Called when someone is allowed to join — NOT when
+    staff accept — so a booking made days ahead never gets a room that has
+    expired by the time of the call.
+    Returns (room_url, room_name, room_expires_at). Raises DailyServiceUnavailable.
+    """
+    now = timezone.now()
+    if session.room_name and session.room_url and session.room_expires_at \
+            and session.room_expires_at > now + timedelta(minutes=10):
+        return session.room_url, session.room_name, session.room_expires_at
+
+    start = session.scheduled_time if (session.is_scheduled and session.scheduled_time > now) else now
+    expires_at = start + timedelta(minutes=session.duration_minutes + ROOM_BUFFER_MINUTES)
+    old_room = session.room_name
+
+    room = create_room(session.pk, expires_at)
+    session.room_name = room["name"]
+    session.room_url = room["url"]
+    session.room_expires_at = expires_at
+    session.save(update_fields=["room_name", "room_url", "room_expires_at", "updated_at"])
+    if old_room:
+        delete_room(old_room)
+    return session.room_url, session.room_name, session.room_expires_at

@@ -211,6 +211,17 @@ REPLY_TO_EMAIL = config("REPLY_TO_EMAIL", default="")
 # Extra inbox(es) that receive a copy of every staff alert (new requests,
 # bookings, volunteers), on top of each staff user's own email. Comma-separated.
 STAFF_ALERT_EMAILS = config("STAFF_ALERT_EMAILS", default="", cast=Csv())
+# Division mailboxes. Emails about a division go out From and Reply-To that
+# division's address, so replies reach the right team. Each address needs an
+# Email Routing rule in Cloudflare (inbound); Resend sends for the whole domain.
+# Override any one with an env var, or change EMAIL_DOMAIN for all of them.
+EMAIL_DOMAIN = config("EMAIL_DOMAIN", default="wolbiroyal.com")
+DIVISION_EMAILS = {
+    "TECHNOLOGY": config("EMAIL_TECHNOLOGIES", default=f"tech@{EMAIL_DOMAIN}"),
+    "MEDICAL":    config("EMAIL_MEDICAL",      default=f"medical@{EMAIL_DOMAIN}"),
+    "VIRTUAL":    config("EMAIL_VIRTUAL",      default=f"virtual@{EMAIL_DOMAIN}"),
+    "FOUNDATION": config("EMAIL_FOUNDATION",   default=f"foundation@{EMAIL_DOMAIN}"),
+}
 # Public site, used to build links inside emails.
 SITE_URL = config("SITE_URL", default="https://wolbiroyal.com").rstrip("/")
 # Send emails in a background thread so requests never wait on Resend.

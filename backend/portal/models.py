@@ -3,8 +3,15 @@ import re
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.db import models
+from django.utils.html import format_html
 
 HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
+MAX_ICON_BYTES = 2 * 1024 * 1024
+
+
+def validate_icon_size(f):
+    if f.size > MAX_ICON_BYTES:
+        raise ValidationError("Icon is too large — please upload an image under 2 MB.")
 
 
 def valid_roles():
@@ -38,7 +45,12 @@ class PortalApp(models.Model):
         help_text="Full address, e.g. https://farmasyst.wolbiroyal.com",
     )
     category    = models.CharField(max_length=40, blank=True, help_text="e.g. Health, Agriculture, Finance")
-    icon        = models.CharField(max_length=8, blank=True, help_text="One emoji, e.g. 🌾")
+    icon_image  = models.ImageField(
+        upload_to="portal/icons/", blank=True, null=True, validators=[validate_icon_size],
+        help_text="Upload the app's logo (square PNG, JPG or WebP, under 2 MB works best). "
+                  "Shown instead of the emoji below.",
+    )
+    icon        = models.CharField(max_length=8, blank=True, help_text="Fallback emoji if no logo is uploaded, e.g. 🌾")
     color       = models.CharField(max_length=7, default="#1e3a5f", help_text="Accent colour, e.g. #16a34a")
     status      = models.CharField(max_length=12, choices=Status.choices, default=Status.LIVE)
     visibility  = models.CharField(max_length=10, choices=Visibility.choices, default=Visibility.PUBLIC)
@@ -60,6 +72,13 @@ class PortalApp(models.Model):
 
     def __str__(self):
         return self.name
+
+    def icon_preview(self):
+        if self.icon_image:
+            return format_html('<img src="{}" alt="" style="height:36px;width:36px;object-fit:cover;border-radius:8px;">',
+                               self.icon_image.url)
+        return self.icon or "—"
+    icon_preview.short_description = "Icon"
 
     def role_list(self):
         return [r.strip().upper() for r in self.allowed_roles.split(",") if r.strip()]

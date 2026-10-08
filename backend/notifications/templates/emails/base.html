@@ -59,6 +59,10 @@
             </table>
             {% endif %}
 
+            {% if cta2_url %}
+            <p style="margin:0 0 20px;font-size:14px;"><a href="{{ cta2_url }}" style="color:#1e3a5f;font-weight:700;">{{ cta2_label }}</a></p>
+            {% endif %}
+
             {% for p in closing %}
             <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#334155;">{{ p|linebreaksbr }}</p>
             {% endfor %}
@@ -73,6 +77,7 @@
         <tr>
           <td style="padding:20px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#64748b;">
             {% if footer_note %}<p style="margin:0 0 8px;">{{ footer_note }}</p>{% endif %}
+            {% if team and team_email %}<p style="margin:0 0 8px;">{{ team }} · <a href="mailto:{{ team_email }}" style="color:#1e3a5f;">{{ team_email }}</a></p>{% endif %}
             <p style="margin:0;">Wolbi Royal Enterprise · Tamale, Ghana · <a href="{{ site_url }}" style="color:#1e3a5f;">wolbiroyal.com</a></p>
           </td>
         </tr>

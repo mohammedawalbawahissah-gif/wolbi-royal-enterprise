@@ -1,6 +1,7 @@
 const STATUS_STYLES = {
   PENDING:     { bg: "#fef3c7", color: "#92400e", label: "Pending" },
   IN_PROGRESS: { bg: "#dbeafe", color: "#1e40af", label: "In Progress" },
+  CONFIRMED:   { bg: "#dcfce7", color: "#166534", label: "Confirmed" },
   REVIEW:      { bg: "#ede9fe", color: "#5b21b6", label: "Under Review" },
   COMPLETED:   { bg: "#dcfce7", color: "#166534", label: "Completed" },
   CANCELLED:   { bg: "#fee2e2", color: "#991b1b", label: "Cancelled" },

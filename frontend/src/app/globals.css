@@ -65,19 +65,26 @@ a { color: inherit; text-decoration: none; }
 img { max-width: 100%; height: auto; }
 
 /* ── Global responsive helpers ────────────────────────────────────────────
-   Most pages use inline styles. React serialises them WITHOUT a space after
-   the colon (grid-template-columns:1fr 1fr), so these selectors match that
-   exact form. */
+   Most pages use inline styles, so these rules match on the style attribute.
+   The attribute text differs depending on how the page arrived:
+     server-rendered HTML   →  grid-template-columns:1fr 1fr
+     after client navigation →  grid-template-columns: 1fr 1fr
+   Every selector below therefore has both spellings — keep it that way. */
 
 body { overflow-wrap: break-word; }
 
 /* Tablet: 3- and 4-column fixed grids drop to 2 columns */
 @media (max-width: 1024px) {
   [style*="grid-template-columns:1fr 1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr 1fr"],
   [style*="grid-template-columns:repeat(3,1fr)"],
+  [style*="grid-template-columns: repeat(3,1fr)"],
   [style*="grid-template-columns:repeat(3, 1fr)"],
+  [style*="grid-template-columns: repeat(3, 1fr)"],
   [style*="grid-template-columns:repeat(4,1fr)"],
-  [style*="grid-template-columns:repeat(4, 1fr)"] {
+  [style*="grid-template-columns: repeat(4,1fr)"],
+  [style*="grid-template-columns:repeat(4, 1fr)"],
+  [style*="grid-template-columns: repeat(4, 1fr)"] {
     grid-template-columns: 1fr 1fr !important;
   }
 }
@@ -85,23 +92,41 @@ body { overflow-wrap: break-word; }
 /* Phone / small tablet: every fixed multi-column grid becomes one column */
 @media (max-width: 768px) {
   [style*="grid-template-columns:1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr"],
   [style*="grid-template-columns:1fr 1.4fr"],
+  [style*="grid-template-columns: 1fr 1.4fr"],
   [style*="grid-template-columns:1fr 1.6fr"],
+  [style*="grid-template-columns: 1fr 1.6fr"],
   [style*="grid-template-columns:1fr 2fr"],
+  [style*="grid-template-columns: 1fr 2fr"],
   [style*="grid-template-columns:2fr 1fr"],
+  [style*="grid-template-columns: 2fr 1fr"],
   [style*="grid-template-columns:360px 1fr"],
+  [style*="grid-template-columns: 360px 1fr"],
   [style*="grid-template-columns:380px 1fr"],
+  [style*="grid-template-columns: 380px 1fr"],
   [style*="grid-template-columns:1fr 360px"],
+  [style*="grid-template-columns: 1fr 360px"],
   [style*="grid-template-columns:1fr 1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr 1fr"],
   [style*="grid-template-columns:repeat(3,1fr)"],
+  [style*="grid-template-columns: repeat(3,1fr)"],
   [style*="grid-template-columns:repeat(3, 1fr)"],
+  [style*="grid-template-columns: repeat(3, 1fr)"],
   [style*="grid-template-columns:repeat(4,1fr)"],
-  [style*="grid-template-columns:repeat(4, 1fr)"] {
+  [style*="grid-template-columns: repeat(4,1fr)"],
+  [style*="grid-template-columns:repeat(4, 1fr)"],
+  [style*="grid-template-columns: repeat(4, 1fr)"] {
     grid-template-columns: 1fr !important;
   }
 
   /* Big desktop gaps and padding are too generous on a phone */
-  [style*="gap:64px"], [style*="gap:56px"], [style*="gap:48px"] { gap: 28px !important; }
+  [style*="gap:64px"],
+  [style*="gap: 64px"],
+  [style*="gap:56px"],
+  [style*="gap: 56px"],
+  [style*="gap:48px"],
+  [style*="gap: 48px"] { gap: 28px !important; }
   section { padding-left: 1rem !important; padding-right: 1rem !important; }
   h1 { letter-spacing: -0.5px !important; overflow-wrap: anywhere; }
 
@@ -111,11 +136,12 @@ body { overflow-wrap: break-word; }
 
 /* Header rows (title + button) wrap instead of squeezing */
 @media (max-width: 640px) {
-  [style*="justify-content:space-between"] { flex-wrap: wrap; gap: 12px; }
+  [style*="justify-content:space-between"],
+  [style*="justify-content: space-between"] { flex-wrap: wrap; gap: 12px; }
   button, a[style*="padding"] { min-height: 40px; }
 }
 
-/* Minimum comfortable touch target for icon buttons / links in nav areas */
+/* Minimum comfortable touch target for nav links on touch screens */
 @media (pointer: coarse) {
   .nav-link, .mobile-link, .mobile-sub-link { min-height: 44px; }
 }

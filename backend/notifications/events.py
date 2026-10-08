@@ -5,12 +5,14 @@ Each function is called from the view/model where the event happens and must
 never raise — a failed email or notification should not break the client's
 request. Wording lives here so it can be edited without touching the views.
 """
+from datetime import timezone as dt_timezone
 import logging
 from functools import wraps
 
 from django.conf import settings
 from django.utils import timezone
 
+from .divisions import general_sender, sender_for, sender_for_inquiry
 from .models import EmailLog, Notification
 from .services import EmailContent, dashboard_url, notify_staff, send_email, staff_users
 
@@ -30,6 +32,20 @@ def _safe(fn):
 
 def _first_name(name):
     return (name or "").strip().split(" ")[0] or "there"
+
+
+def _brand(content, sender):
+    """Sign the email as the division and show its mailbox in the footer."""
+    if sender.division:
+        if content.signoff == EmailContent.__dataclass_fields__["signoff"].default:
+            content.signoff = f"Warm regards,\n{sender.team}"
+        content.team, content.team_email = sender.name, sender.address
+    return content
+
+
+def _extra_inboxes(sender):
+    """Division mailbox gets a copy of staff alerts about its own division."""
+    return [sender.address] if sender.division else []
 
 
 def _fmt_dt(dt):
@@ -76,9 +92,10 @@ def lead_created(lead):
         "contact": "Thanks for contacting Wolbi Royal Enterprise. A member of our team will get back to you shortly.",
     }[variant]
 
+    sender = sender_for_inquiry(lead.inquiry_type)
     send_email(
         lead.email,
-        EmailContent(
+        _brand(EmailContent(
             subject=f"{heading} — Wolbi Royal Enterprise",
             preheader=intro,
             eyebrow="Request received",
@@ -96,9 +113,10 @@ def lead_created(lead):
                 "For your privacy, we haven't repeated your health details in this email." if is_medical else "",
                 "If you need to add anything, just reply to this email and quote your reference.",
             ],
-        ),
+        ), sender),
         audience=CLIENT,
         kind=f"lead_{variant}_confirmation",
+        sender=sender,
     )
 
     role = _LEAD_ROLE.get(lead.inquiry_type)
@@ -111,6 +129,7 @@ def lead_created(lead):
         message=f"{lead.subject} — {lead.email}{' · ' + lead.phone if lead.phone else ''}",
         kind=kind,
         link="/dashboard/leads",
+        extra_inboxes=_extra_inboxes(sender),
         email_kind=f"staff_lead_{variant}",
         email=EmailContent(
             subject=f"[Wolbi] {title}",
@@ -145,20 +164,21 @@ def lead_reply_sent(reply):
         reply.email_sent = True
         reply.save(update_fields=["email_sent"])
 
+    sender = sender_for_inquiry(lead.inquiry_type)
     send_email(
         lead.email,
-        EmailContent(
+        _brand(EmailContent(
             subject=f"Re: {lead.subject}",
             heading=f"Hi {_first_name(lead.name)},",
             paragraphs=[reply.message],
             closing=["You can reply directly to this email."],
-            signoff=f"{staff_name}\nWolbi Royal Enterprise",
+            signoff=f"{staff_name}\n{sender.name}",
             details=[],
-        ),
+        ), sender),
         audience=CLIENT,
         kind="lead_reply",
-        # Client replies go straight to the staff member, or the shared inbox
-        reply_to=(staff.email if staff and staff.email else settings.REPLY_TO_EMAIL),
+        # Sent from the division mailbox; replies come back to it (shared inbox)
+        sender=sender,
         on_sent=_mark_sent,
     )
 
@@ -169,10 +189,78 @@ def _session_link(session):
     return f"{settings.SITE_URL}/teleconsultation?session={session.pk}&token={session.access_token}"
 
 
+def _session_sender(session):
+    return sender_for(session.division)
+
+
+def _when(session):
+    """The session time as the client will read it: in their own timezone when
+    we know it, always with the Ghana time staff work to."""
+    dt = session.scheduled_time
+    if not dt:
+        return ""
+    ghana = timezone.localtime(dt).strftime("%A %d %B %Y, %I:%M %p").replace(" 0", " ")
+    tz_name = (session.timezone or "").strip()
+    if tz_name and tz_name not in ("Africa/Accra", "UTC", "GMT"):
+        try:
+            from zoneinfo import ZoneInfo
+            local = dt.astimezone(ZoneInfo(tz_name))
+            return f"{local.strftime('%A %d %B %Y, %I:%M %p').replace(' 0', ' ')} ({tz_name.replace('_', ' ')}) · {ghana.split(', ')[1]} Ghana time"
+        except Exception:
+            pass
+    return f"{ghana} (Ghana time, GMT)"
+
+
+def _calendar_url(session):
+    """Google Calendar 'add event' link for a scheduled session."""
+    from datetime import timedelta
+    from urllib.parse import urlencode
+    start = session.scheduled_time.astimezone(dt_timezone.utc)
+    end = start + timedelta(minutes=session.duration_minutes)
+    fmt = "%Y%m%dT%H%M%SZ"
+    return "https://calendar.google.com/calendar/render?" + urlencode({
+        "action": "TEMPLATE",
+        "text": f"Teleconsultation — {session.get_division_display()}",
+        "dates": f"{start.strftime(fmt)}/{end.strftime(fmt)}",
+        "details": f"Join your video consultation here: {_session_link(session)}",
+    })
+
+
+def _staff_alert(session, title, message, *, eyebrow, paragraphs, cta="Open teleconsultations", targets=None):
+    sender = _session_sender(session)
+    notify_staff(
+        targets if targets is not None else [session.assigned_staff] if session.assigned_staff_id else [],
+        title=title,
+        message=message,
+        kind=Notification.Kind.TELECONSULTATION,
+        link="/dashboard/teleconsultations",
+        extra_inboxes=_extra_inboxes(sender),
+        email_kind="staff_teleconsult_update",
+        email=EmailContent(
+            subject=f"[Wolbi] {title}",
+            eyebrow=eyebrow,
+            heading=title,
+            paragraphs=paragraphs,
+            details=[
+                ("Reference", f"TC-{session.pk:05d}"),
+                ("Name", session.name),
+                ("Email", session.email),
+                ("Phone", session.phone),
+                ("Service", session.get_division_display()),
+                ("Time", _when(session) or "Now"),
+            ],
+            cta_label=cta,
+            cta_url=dashboard_url("/dashboard/teleconsultations"),
+            signoff="",
+        ),
+    )
+
+
 @_safe
 def consultation_requested(session, staff_targets):
     first = _first_name(session.name)
     instant = session.mode == "INSTANT"
+    sender = _session_sender(session)
     if instant:
         content = EmailContent(
             subject="We're connecting you with a specialist — Wolbi Royal Enterprise",
@@ -185,52 +273,55 @@ def consultation_requested(session, staff_targets):
             details=[("Reference", f"TC-{session.pk:05d}"), ("Service", session.get_division_display())],
             cta_label="Return to my session",
             cta_url=_session_link(session),
-            closing=["We'll also email you the moment a specialist joins."],
+            closing=["We'll also email you the moment a specialist joins. If nobody is free, you can switch to a time that suits you from the same page."],
         )
     else:
         content = EmailContent(
-            subject="Your teleconsultation is booked — Wolbi Royal Enterprise",
-            eyebrow="Booking confirmed",
-            heading=f"Hi {first}, your teleconsultation is booked",
-            paragraphs=["Thanks for booking a teleconsultation with Wolbi Royal Enterprise. Here are your details:"],
+            subject="We've received your teleconsultation request — Wolbi Royal Enterprise",
+            eyebrow="Request received",
+            heading=f"Hi {first}, we've received your booking request",
+            paragraphs=[
+                "Thanks for booking a teleconsultation. A team member will confirm your time shortly, and we'll email you as soon as they do.",
+            ],
             details=[
                 ("Reference", f"TC-{session.pk:05d}"),
                 ("Service", session.get_division_display()),
-                ("Requested time", _fmt_dt(session.scheduled_time)),
+                ("Requested time", _when(session)),
+                ("Length", f"{session.duration_minutes} minutes"),
             ],
             cta_label="View my booking",
             cta_url=_session_link(session),
-            closing=[
-                "We'll email you a join link when your specialist opens the room at the scheduled time.",
-                "Need to change the time? Just reply to this email.",
-            ],
+            closing=["Need a different time? Open your booking with the button above, or just reply to this email."],
         )
-    send_email(session.email, content, audience=CLIENT,
-               kind="teleconsult_instant_confirmation" if instant else "teleconsult_booking_confirmation")
+    send_email(session.email, _brand(content, sender), audience=CLIENT,
+               kind="teleconsult_instant_confirmation" if instant else "teleconsult_booking_received",
+               sender=sender)
 
     title = f"New {session.get_mode_display().lower()} teleconsultation: {session.name}"
     notify_staff(
         staff_targets,
         title=title,
         message=f"{session.get_division_display()}"
-                f"{' · ' + _fmt_dt(session.scheduled_time) if session.scheduled_time else ' · waiting now'}"
+                f"{' · ' + _when(session) if session.scheduled_time else ' · waiting now'}"
                 f" — {session.reason[:120]}",
         kind=Notification.Kind.TELECONSULTATION,
         link="/dashboard/teleconsultations",
+        extra_inboxes=_extra_inboxes(sender),
         email_kind="staff_teleconsult_request",
         email=EmailContent(
             subject=f"[Wolbi] {title}",
-            eyebrow="Waiting now" if instant else "New booking",
+            eyebrow="Waiting now" if instant else "Needs confirming",
             heading=title,
             paragraphs=["The client is waiting on the website — claim it in the dashboard to open the video room."
-                        if instant else "A scheduled teleconsultation was just booked."],
+                        if instant else "A teleconsultation was booked for later. Open it in the dashboard to confirm the time (or suggest another)."],
             details=[
                 ("Reference", f"TC-{session.pk:05d}"),
                 ("Name", session.name),
                 ("Email", session.email),
                 ("Phone", session.phone),
                 ("Service", session.get_division_display()),
-                ("Time", _fmt_dt(session.scheduled_time) or "Now"),
+                ("Time", _when(session) or "Now"),
+                ("Length", f"{session.duration_minutes} minutes" if not instant else ""),
             ],
             quote=session.reason,
             cta_label="Open teleconsultations",
@@ -242,11 +333,13 @@ def consultation_requested(session, staff_targets):
 
 @_safe
 def consultation_claimed(session):
+    """Instant request accepted — the room is open now."""
     staff = session.assigned_staff
     who = (staff.get_full_name() or "A specialist") if staff else "A specialist"
+    sender = _session_sender(session)
     send_email(
         session.email,
-        EmailContent(
+        _brand(EmailContent(
             subject="Your specialist is ready — join your teleconsultation",
             eyebrow="Ready to join",
             heading=f"Hi {_first_name(session.name)}, {who} is ready for you",
@@ -255,17 +348,208 @@ def consultation_claimed(session):
             cta_label="Join my teleconsultation",
             cta_url=_session_link(session),
             closing=["Please allow your browser to use your camera and microphone when asked."],
-        ),
+        ), sender),
         audience=CLIENT,
         kind="teleconsult_ready",
+        sender=sender,
+    )
+
+
+@_safe
+def consultation_confirmed(session, time_changed=False):
+    """A scheduled booking was accepted by staff."""
+    staff = session.assigned_staff
+    who = (staff.get_full_name() or "A specialist") if staff else "A specialist"
+    sender = _session_sender(session)
+    send_email(
+        session.email,
+        _brand(EmailContent(
+            subject="Your teleconsultation is confirmed — Wolbi Royal Enterprise",
+            eyebrow="Confirmed",
+            heading=f"Hi {_first_name(session.name)}, your teleconsultation is confirmed",
+            paragraphs=[
+                f"{who} will see you at the time below."
+                + (" Note: this is a different time from the one you requested." if time_changed else ""),
+            ],
+            details=[
+                ("Reference", f"TC-{session.pk:05d}"),
+                ("Service", session.get_division_display()),
+                ("When", _when(session)),
+                ("Length", f"{session.duration_minutes} minutes"),
+            ],
+            cta_label="Open my booking",
+            cta_url=_session_link(session),
+            cta2_label="Add to Google Calendar",
+            cta2_url=_calendar_url(session),
+            closing=[
+                f"The video room opens {session.CLIENT_EARLY_MINUTES} minutes before your time. "
+                "Open your booking from this email and press Join — no app or account needed.",
+                "We'll send a reminder shortly before. Can't make it? You can reschedule or cancel from your booking page.",
+            ],
+        ), sender),
+        audience=CLIENT,
+        kind="teleconsult_confirmed",
+        sender=sender,
+    )
+
+
+@_safe
+def consultation_rescheduled(session, by, was_instant=False):
+    sender = _session_sender(session)
+    if by == "staff":
+        send_email(
+            session.email,
+            _brand(EmailContent(
+                subject="Your teleconsultation time has changed — Wolbi Royal Enterprise",
+                eyebrow="New time",
+                heading=f"Hi {_first_name(session.name)}, your teleconsultation has been rescheduled",
+                paragraphs=["Our team has moved your teleconsultation to the time below."],
+                details=[
+                    ("Reference", f"TC-{session.pk:05d}"),
+                    ("New time", _when(session)),
+                    ("Length", f"{session.duration_minutes} minutes"),
+                ],
+                cta_label="Open my booking",
+                cta_url=_session_link(session),
+                cta2_label="Add to Google Calendar",
+                cta2_url=_calendar_url(session),
+                closing=["If this time doesn't work, open your booking and choose another, or reply to this email."],
+            ), sender),
+            audience=CLIENT,
+            kind="teleconsult_rescheduled",
+            sender=sender,
+        )
+        return
+
+    # Changed by the client: acknowledge, and ask staff to confirm the new time
+    send_email(
+        session.email,
+        _brand(EmailContent(
+            subject="We've received your new time — Wolbi Royal Enterprise",
+            eyebrow="Request received",
+            heading=f"Hi {_first_name(session.name)}, we've got your new time",
+            paragraphs=[
+                "Thanks — we'll confirm this time with you shortly. Until then, your previous time is no longer held."
+                if not was_instant else
+                "Thanks for choosing a later time. A team member will confirm it shortly.",
+            ],
+            details=[("Reference", f"TC-{session.pk:05d}"), ("Requested time", _when(session))],
+            cta_label="View my booking",
+            cta_url=_session_link(session),
+        ), sender),
+        audience=CLIENT,
+        kind="teleconsult_reschedule_received",
+        sender=sender,
+    )
+    targets = [session.assigned_staff] if session.assigned_staff_id else []
+    title = f"{session.name} asked for a new teleconsultation time"
+    _staff_alert(
+        session, title, f"{session.get_division_display()} · {_when(session)}",
+        eyebrow="Needs confirming",
+        paragraphs=["The client changed their requested time. Open it in the dashboard to confirm."],
+        targets=targets or _division_staff(session),
+    )
+
+
+def _division_staff(session):
+    from .services import staff_users
+    role = {"MEDICAL": "MEDICAL", "VIRTUAL": "VA"}.get(session.division)
+    return list(staff_users([role] if role else []))
+
+
+@_safe
+def consultation_reminder(session):
+    """Sent roughly 30 minutes before a confirmed session."""
+    sender = _session_sender(session)
+    send_email(
+        session.email,
+        _brand(EmailContent(
+            subject="Reminder: your teleconsultation is starting soon",
+            eyebrow="Starting soon",
+            heading=f"Hi {_first_name(session.name)}, your teleconsultation starts soon",
+            paragraphs=["This is a reminder of your upcoming video consultation."],
+            details=[
+                ("Reference", f"TC-{session.pk:05d}"),
+                ("When", _when(session)),
+                ("Length", f"{session.duration_minutes} minutes"),
+            ],
+            cta_label="Join when it's time",
+            cta_url=_session_link(session),
+            closing=[
+                f"The room opens {session.CLIENT_EARLY_MINUTES} minutes before your time. "
+                "Find somewhere quiet with a good connection, and allow camera and microphone access when asked.",
+            ],
+        ), sender),
+        audience=CLIENT,
+        kind="teleconsult_reminder",
+        sender=sender,
+    )
+    staff = session.assigned_staff
+    if staff:
+        title = f"Teleconsultation soon: {session.name}"
+        _staff_alert(
+            session, title, f"{_when(session)} · {session.get_division_display()}",
+            eyebrow="Starting soon",
+            paragraphs=[f"You're booked to see {session.name} shortly. You can enter the room "
+                        f"{session.STAFF_EARLY_MINUTES} minutes before the start."],
+            targets=[staff],
+        )
+
+
+@_safe
+def consultation_missed(session):
+    sender = _session_sender(session)
+    send_email(
+        session.email,
+        _brand(EmailContent(
+            subject="We missed you — rebook your teleconsultation",
+            heading=f"Hi {_first_name(session.name)}, we couldn't connect this time",
+            paragraphs=[
+                "Your teleconsultation time came and went without anyone joining the video room. "
+                "We're sorry we missed each other — let's find another time.",
+            ],
+            details=[("Reference", f"TC-{session.pk:05d}"), ("Booked time", _when(session))],
+            cta_label="Book a new session",
+            cta_url=f"{settings.SITE_URL}/teleconsultation",
+        ), sender),
+        audience=CLIENT,
+        kind="teleconsult_missed",
+        sender=sender,
+    )
+
+
+@_safe
+def consultation_expired(session, kind):
+    """The system closed a request nobody picked up."""
+    sender = _session_sender(session)
+    if kind == "instant":
+        paragraphs = ["Everyone on our team was busy when you asked to talk, so we couldn't connect you.",
+                      "You can book a time that suits you, and a team member will confirm it."]
+    else:
+        paragraphs = ["Your requested time passed before a team member could confirm it.",
+                      "Please book a new time — we'll confirm it as quickly as we can."]
+    send_email(
+        session.email,
+        _brand(EmailContent(
+            subject="We couldn't connect your teleconsultation — Wolbi Royal Enterprise",
+            heading=f"Hi {_first_name(session.name)}, we're sorry we couldn't reach you in time",
+            paragraphs=paragraphs,
+            details=[("Reference", f"TC-{session.pk:05d}")],
+            cta_label="Book a time",
+            cta_url=f"{settings.SITE_URL}/teleconsultation",
+        ), sender),
+        audience=CLIENT,
+        kind="teleconsult_expired",
+        sender=sender,
     )
 
 
 @_safe
 def consultation_completed(session):
+    sender = _session_sender(session)
     send_email(
         session.email,
-        EmailContent(
+        _brand(EmailContent(
             subject="Thank you for your teleconsultation — Wolbi Royal Enterprise",
             heading=f"Thank you, {_first_name(session.name)}",
             paragraphs=[
@@ -273,29 +557,57 @@ def consultation_completed(session):
                 "If you have follow-up questions, reply to this email and our team will get back to you.",
             ],
             details=[("Reference", f"TC-{session.pk:05d}")],
-        ),
+        ), sender),
         audience=CLIENT,
         kind="teleconsult_completed",
+        sender=sender,
     )
 
 
 @_safe
-def consultation_cancelled(session):
+def consultation_cancelled(session, by="staff"):
+    sender = _session_sender(session)
+    if by == "client":
+        # The client did it themselves — confirm to them, and tell staff
+        send_email(
+            session.email,
+            _brand(EmailContent(
+                subject="Your teleconsultation was cancelled — Wolbi Royal Enterprise",
+                heading=f"Hi {_first_name(session.name)}, your booking is cancelled",
+                paragraphs=["As you asked, we've cancelled your teleconsultation. You're welcome to book again any time."],
+                details=[("Reference", f"TC-{session.pk:05d}")],
+                cta_label="Book a new session",
+                cta_url=f"{settings.SITE_URL}/teleconsultation",
+            ), sender),
+            audience=CLIENT,
+            kind="teleconsult_cancelled",
+            sender=sender,
+        )
+        title = f"{session.name} cancelled their teleconsultation"
+        _staff_alert(
+            session, title, f"{session.get_division_display()} · {_when(session) or 'instant'}",
+            eyebrow="Cancelled by client",
+            paragraphs=["The client cancelled this session themselves — no action needed."],
+            targets=[session.assigned_staff] if session.assigned_staff_id else _division_staff(session),
+        )
+        return
+
     send_email(
         session.email,
-        EmailContent(
+        _brand(EmailContent(
             subject="Your teleconsultation was cancelled — Wolbi Royal Enterprise",
             heading=f"Hi {_first_name(session.name)}, your session was cancelled",
             paragraphs=[
-                "We're sorry — your teleconsultation request couldn't go ahead this time.",
+                "We're sorry — your teleconsultation couldn't go ahead this time.",
                 "You can book a new session at a time that suits you, or reply to this email and we'll help arrange one.",
             ],
             details=[("Reference", f"TC-{session.pk:05d}")],
             cta_label="Book a new session",
             cta_url=f"{settings.SITE_URL}/teleconsultation",
-        ),
+        ), sender),
         audience=CLIENT,
         kind="teleconsult_cancelled",
+        sender=sender,
     )
 
 
@@ -304,9 +616,10 @@ def consultation_cancelled(session):
 @_safe
 def volunteer_applied(volunteer):
     program = volunteer.program.name if volunteer.program_id else ""
+    sender = sender_for("FOUNDATION")
     send_email(
         volunteer.email,
-        EmailContent(
+        _brand(EmailContent(
             subject="Thank you for volunteering — Wolbi Foundation",
             eyebrow="Wolbi Foundation",
             heading=f"Thank you, {_first_name(volunteer.name)}!",
@@ -315,9 +628,10 @@ def volunteer_applied(volunteer):
                 "A member of the Foundation team will review it and be in touch about next steps.",
             ],
             details=[("Programme", program)],
-        ),
+        ), sender),
         audience=CLIENT,
         kind="volunteer_confirmation",
+        sender=sender,
     )
     title = f"New volunteer application: {volunteer.name}"
     notify_staff(
@@ -326,6 +640,7 @@ def volunteer_applied(volunteer):
         message=f"{volunteer.email}{' · ' + program if program else ''} — {volunteer.interest[:120]}",
         kind=Notification.Kind.VOLUNTEER,
         link="/dashboard/foundation",
+        extra_inboxes=_extra_inboxes(sender),
         email_kind="staff_volunteer",
         email=EmailContent(
             subject=f"[Wolbi] {title}",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { GENERAL_EMAIL, DIVISION_CONTACTS } from "@/lib/divisions";
 import { Hero, Section, SectionHeading, Card } from "@/components/ui";
 import { CheckCircle, Mail, Phone, MapPin } from "lucide-react";
 
@@ -133,7 +134,8 @@ export default function ContactPage() {
             <Card style={{ padding: "24px" }}>
               <p style={{ fontWeight: 700, fontSize: "15px", marginBottom: "16px" }}>Contact Details</p>
               {[
-                { icon: <Mail size={15} />, text: "mohammedawalbawahissah@gmail.com" },
+                { icon: <Mail size={15} />, text: GENERAL_EMAIL },
+                ...DIVISION_CONTACTS.map((d) => ({ icon: <Mail size={15} />, text: `${d.name}: ${d.email}` })),
                 { icon: <Phone size={15} />, text: "+233 241 597 327 / +233 248 316 574 / +233 509 231 963" },
                 { icon: <MapPin size={15} />, text: "Tamale, Ghana" },
               ].map(({ icon, text }) => (

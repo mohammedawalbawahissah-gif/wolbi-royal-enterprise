@@ -17,9 +17,12 @@ export function AppCard({ app }) {
         <span aria-hidden="true" style={{
           width: "52px", height: "52px", borderRadius: "14px", flexShrink: 0,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: "26px", background: `${accent}18`, border: `1px solid ${accent}33`,
+          fontSize: "26px", overflow: "hidden", background: `${accent}18`, border: `1px solid ${accent}33`,
         }}>
-          {app.icon || app.name.charAt(0)}
+          {app.icon_image
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={app.icon_image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "13px" }} />
+            : (app.icon || app.name.charAt(0))}
         </span>
         <span style={{
           fontSize: "10px", fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase",

@@ -20,6 +20,7 @@ from django.db import connection, transaction
 from django.template.loader import render_to_string
 from django.utils import timezone
 
+from .divisions import Sender
 from .models import EmailLog, Notification
 
 logger = logging.getLogger(__name__)
@@ -37,11 +38,15 @@ class EmailContent:
     quote: str = ""                                   # e.g. the client's own message
     cta_label: str = ""
     cta_url: str = ""
+    cta2_label: str = ""    # optional second, quieter link (e.g. "Add to calendar")
+    cta2_url: str = ""
     closing: list = field(default_factory=list)
     signoff: str = "Warm regards,\nThe Wolbi Royal Enterprise team"
     eyebrow: str = ""
     preheader: str = ""
     footer_note: str = ""
+    team: str = ""          # e.g. "Wolbi Medical Services" — shown in the footer with its address
+    team_email: str = ""
 
     def __post_init__(self):
         # Drop empty lines/rows so callers can include optional bits inline
@@ -63,10 +68,14 @@ class EmailContent:
             lines += ["> " + l for l in str(self.quote).splitlines()] + [""]
         if self.cta_url:
             lines += [f"{self.cta_label}: {self.cta_url}", ""]
+        if self.cta2_url:
+            lines += [f"{self.cta2_label}: {self.cta2_url}", ""]
         lines += [p + "\n" for p in self.closing]
         if self.signoff:
             lines += [self.signoff, ""]
         lines += ["—", "Wolbi Royal Enterprise · Tamale, Ghana · wolbiroyal.com"]
+        if self.team and self.team_email:
+            lines.append(f"{self.team}: {self.team_email}")
         if self.footer_note:
             lines.append(self.footer_note)
         return "\n".join(lines)
@@ -80,7 +89,7 @@ def _deliver(log_id, on_sent=None, in_thread=False):
         msg = EmailMultiAlternatives(
             subject=log.subject,
             body=log.text_body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
+            from_email=log.from_email or settings.DEFAULT_FROM_EMAIL,
             to=[a.strip() for a in log.to.split(",") if a.strip()],
             reply_to=[log.reply_to] if log.reply_to else None,
         )
@@ -107,10 +116,15 @@ def _deliver(log_id, on_sent=None, in_thread=False):
             connection.close()
 
 
-def send_email(to, content: EmailContent, *, audience, kind="", reply_to=None, on_sent=None):
+def send_email(to, content: EmailContent, *, audience, kind="", reply_to=None, on_sent=None,
+               sender: Sender | None = None):
     """
     Queue one email. `to` is an address or list of addresses (all visible to
     each other — use separate calls for separate people). Returns the EmailLog.
+
+    `sender` (see notifications.divisions) picks the From name/address and,
+    unless `reply_to` is given, where replies go. Without it the default
+    sender and REPLY_TO_EMAIL are used.
     """
     recipients = [to] if isinstance(to, str) else list(to)
     recipients = [r.strip() for r in recipients if r and r.strip()]
@@ -124,7 +138,9 @@ def send_email(to, content: EmailContent, *, audience, kind="", reply_to=None, o
         kind=kind,
         text_body=content.render_text(),
         html_body=content.render_html(),
-        reply_to=reply_to if reply_to is not None else (settings.REPLY_TO_EMAIL or ""),
+        reply_to=(reply_to if reply_to is not None
+                  else (sender.address if sender else (settings.REPLY_TO_EMAIL or ""))),
+        from_email=sender.from_header if sender else "",
     )
     if getattr(settings, "EMAIL_ASYNC", True):
         # on_commit: if we're inside a transaction, wait until the EmailLog row
@@ -154,12 +170,13 @@ def staff_users(roles=()):
 
 
 def notify_staff(users, *, title, message, kind, link="", email: EmailContent | None = None,
-                 email_kind="", alert_inboxes=True, exclude=None):
+                 email_kind="", alert_inboxes=True, exclude=None, extra_inboxes=()):
     """
     In-app notification for each user (deduplicated), plus one email per user
     who has an address and email_notifications on, plus a copy to the
     STAFF_ALERT_EMAILS inbox(es) when alert_inboxes is True.
     `exclude` = the user who triggered the event (they don't need to be told).
+    `extra_inboxes` = more addresses to copy, e.g. the division mailbox.
     """
     seen, targets = set(), []
     for u in users:
@@ -182,6 +199,7 @@ def notify_staff(users, *, title, message, kind, link="", email: EmailContent | 
             addresses.append(u.email.lower())
     if alert_inboxes:
         addresses += [a.lower() for a in settings.STAFF_ALERT_EMAILS if a]
+        addresses += [a.lower() for a in extra_inboxes if a]
 
     for address in dict.fromkeys(addresses):  # dedupe, keep order
         send_email(address, email, audience=EmailLog.Audience.STAFF, kind=email_kind or kind.lower())

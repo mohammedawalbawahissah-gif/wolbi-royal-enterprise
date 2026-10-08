@@ -113,7 +113,7 @@ class LeadTests(Base):
         self.assertEqual(len(emails_to("admin@wolbiroyal.com")), 0)
         self.assertTrue(Notification.objects.filter(user=self.admin).exists())
 
-    def test_staff_reply_goes_to_client_with_reply_to_staff(self):
+    def test_staff_reply_goes_to_client_and_replies_return_to_shared_inbox(self):
         self.post_lead()
         lead = Lead.objects.get()
         mail.outbox.clear()
@@ -123,73 +123,87 @@ class LeadTests(Base):
         m = emails_to("kofi@example.com")[0]
         self.assertEqual(m.subject, "Re: Website help")
         self.assertIn("Happy to help!", m.body)
-        self.assertEqual(m.reply_to, ["admin@wolbiroyal.com"])
+        self.assertEqual(m.reply_to, ["hello@wolbiroyal.com"])    # general lead → general inbox
         self.assertTrue(LeadReply.objects.get().email_sent)
 
 
-class TeleconsultationTests(Base):
-    def request(self, mode="INSTANT", reason="I need a lab test for malaria"):
-        data = {"name": "Abena", "email": "abena@example.com", "reason": reason, "mode": mode}
-        if mode == "SCHEDULED":
-            data["scheduled_time"] = (timezone.now() + timedelta(days=2)).isoformat()
-        return self.client.post("/api/v1/teleconsultations/request/", data, format="json")
+class DivisionMailboxTests(Base):
+    """Each division sends from, and takes replies at, its own address."""
 
-    def test_instant_request_full_lifecycle(self):
-        self.medic.is_available_for_calls = True
-        self.medic.save()
-        res = self.request()
-        self.assertEqual(res.status_code, 201)
-        session = ConsultationSession.objects.get()
+    CASES = {
+        "TECHNOLOGY": ("Wolbi Technologies", "tech@wolbiroyal.com"),
+        "MEDICAL": ("Wolbi Medical Services", "medical@wolbiroyal.com"),
+        "VIRTUAL": ("Wolbi Virtual Solutions", "virtual@wolbiroyal.com"),
+        "FOUNDATION": ("Wolbi Foundation", "foundation@wolbiroyal.com"),
+        # Related inquiry types follow their owning division
+        "AGRICULTURE": ("Wolbi Technologies", "tech@wolbiroyal.com"),
+        "DEMO": ("Wolbi Technologies", "tech@wolbiroyal.com"),
+    }
 
-        m = emails_to("abena@example.com")[0]
-        self.assertIn("connecting you", m.subject)
-        self.assertIn(f"session={session.pk}&token={session.access_token}", m.body)
-        # Only the available medical staffer is alerted (plus the alert inbox)
-        self.assertTrue(Notification.objects.filter(user=self.medic, kind="TELECONSULTATION").exists())
-        self.assertFalse(Notification.objects.filter(user=self.admin).exists())
+    def post(self, inquiry_type):
+        return self.client.post("/api/v1/leads/", {
+            "name": "Kofi", "email": "kofi@example.com", "subject": "Hello",
+            "message": "Question", "inquiry_type": inquiry_type}, format="json")
 
-        # Staff claims → client gets the join email
+    def test_client_email_is_sent_from_and_replies_to_the_division(self):
+        for inquiry, (name, address) in self.CASES.items():
+            mail.outbox.clear()
+            EmailLog.objects.all().delete()
+            self.assertEqual(self.post(inquiry).status_code, 201)
+            log = EmailLog.objects.get(to="kofi@example.com")
+            self.assertEqual(log.from_email, f"{name} <{address}>", inquiry)
+            self.assertEqual(log.reply_to, address, inquiry)
+            m = emails_to("kofi@example.com")[0]
+            self.assertEqual(m.from_email, f"{name} <{address}>", inquiry)
+            self.assertEqual(m.reply_to, [address], inquiry)
+            self.assertIn(f"The {name} team", m.body, inquiry)
+            self.assertIn(address, m.body, inquiry)          # footer shows the mailbox
+
+    def test_general_and_partnership_use_the_general_sender(self):
+        for inquiry in ("GENERAL", "PARTNERSHIP"):
+            EmailLog.objects.all().delete()
+            self.post(inquiry)
+            log = EmailLog.objects.get(to="kofi@example.com")
+            self.assertEqual(log.from_email, "Wolbi Royal Enterprise <hello@wolbiroyal.com>")
+            self.assertEqual(log.reply_to, "hello@wolbiroyal.com")
+
+    def test_division_inbox_gets_a_copy_of_staff_alerts(self):
+        self.post("MEDICAL")
+        alerts = emails_to("medical@wolbiroyal.com")
+        self.assertEqual(len(alerts), 1)
+        self.assertTrue(alerts[0].subject.startswith("[Wolbi]"))
+        self.assertEqual(len(emails_to("tech@wolbiroyal.com")), 0)
+
+    def test_staff_reply_comes_from_the_division(self):
+        self.post("MEDICAL")
+        lead = Lead.objects.get()
+        mail.outbox.clear()
         self.client.force_authenticate(self.medic)
-        with mock.patch("teleconsultations.api.views.create_room",
-                        return_value={"name": "room-1", "url": "https://wolbi.daily.co/room-1"}):
-            self.assertEqual(self.client.post(f"/api/v1/teleconsultations/sessions/{session.pk}/claim/").status_code, 200)
-        self.assertIn("specialist is ready", emails_to("abena@example.com")[-1].subject)
+        self.client.post(f"/api/v1/leads/{lead.pk}/reply/", {"message": "We can see you Monday."}, format="json")
+        m = emails_to("kofi@example.com")[0]
+        self.assertEqual(m.from_email, "Wolbi Medical Services <medical@wolbiroyal.com>")
+        self.assertEqual(m.reply_to, ["medical@wolbiroyal.com"])
 
-        # Client can join with the token from the email (no email typed)
-        self.client.force_authenticate(None)
-        with mock.patch("teleconsultations.api.views.create_meeting_token", return_value="tok"):
-            ok = self.client.post(f"/api/v1/teleconsultations/{session.pk}/join/",
-                                  {"token": session.access_token}, format="json")
-            bad = self.client.post(f"/api/v1/teleconsultations/{session.pk}/join/",
-                                   {"token": "wrong"}, format="json")
-        self.assertEqual(ok.status_code, 200)
-        self.assertEqual(bad.status_code, 403)
+    def test_volunteers_use_the_foundation_mailbox(self):
+        self.client.post("/api/v1/foundation/volunteers/",
+                         {"name": "Yaw", "email": "yaw@example.com", "interest": "Teaching"}, format="json")
+        m = emails_to("yaw@example.com")[0]
+        self.assertEqual(m.from_email, "Wolbi Foundation <foundation@wolbiroyal.com>")
+        self.assertEqual(len(emails_to("foundation@wolbiroyal.com")), 1)    # alert copy
 
-        # Complete → thank-you email
-        self.client.force_authenticate(self.medic)
-        with mock.patch("teleconsultations.api.views.delete_room"):
-            self.client.post(f"/api/v1/teleconsultations/sessions/{session.pk}/complete/")
-        self.assertIn("Thank you", emails_to("abena@example.com")[-1].subject)
+    def test_failed_email_retries_with_the_same_sender(self):
+        from notifications.services import retry_email
+        with mock.patch("django.core.mail.EmailMultiAlternatives.send", side_effect=RuntimeError("down")):
+            self.post("TECHNOLOGY")
+        log = EmailLog.objects.get(to="kofi@example.com", status="FAILED")
+        log = retry_email(log)
+        self.assertEqual(log.status, "SENT")
+        self.assertEqual(emails_to("kofi@example.com")[-1].from_email, "Wolbi Technologies <tech@wolbiroyal.com>")
 
-    def test_scheduled_booking_and_cancellation(self):
-        self.request(mode="SCHEDULED", reason="Need help organising my inbox")  # → VIRTUAL division
-        session = ConsultationSession.objects.get()
-        m = emails_to("abena@example.com")[0]
-        self.assertIn("is booked", m.subject)
-        self.assertIn("Requested time", m.body)
-        # Nobody available → whole VA division + admins
-        self.assertTrue(Notification.objects.filter(user=self.va).exists())
-        self.assertTrue(Notification.objects.filter(user=self.admin).exists())
-
-        self.client.force_authenticate(self.admin)
-        self.client.post(f"/api/v1/teleconsultations/sessions/{session.pk}/cancel/")
-        self.assertIn("cancelled", emails_to("abena@example.com")[-1].subject)
-
-    def test_tokens_are_unique(self):
-        self.request()
-        self.request()
-        a, b = ConsultationSession.objects.all()
-        self.assertNotEqual(a.access_token, b.access_token)
+    def test_addresses_can_be_overridden_in_settings(self):
+        with override_settings(DIVISION_EMAILS={"MEDICAL": "clinic@example.org"}):
+            self.post("MEDICAL")
+        self.assertEqual(emails_to("kofi@example.com")[0].reply_to, ["clinic@example.org"])
 
 
 class FoundationAndNewsletterTests(Base):

@@ -70,6 +70,10 @@ class EmailLog(models.Model):
     text_body = models.TextField(blank=True)
     html_body = models.TextField(blank=True)
     reply_to  = models.CharField(max_length=300, blank=True)
+    from_email = models.CharField(
+        max_length=300, blank=True,
+        help_text="Sender shown to the recipient; blank means the default sender",
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     sent_at    = models.DateTimeField(null=True, blank=True)
