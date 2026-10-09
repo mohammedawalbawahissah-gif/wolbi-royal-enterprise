@@ -64,7 +64,7 @@ function LeadsContent() {
     setDrafting(false);
   };
 
-  const priorityColor = { HIGH: "#e11d48", MEDIUM: "#f59e0b", LOW: "var(--muted)" };
+  const priorityColor = { HIGH: "#C75E32", MEDIUM: "#f59e0b", LOW: "var(--muted)" };
 
   const filtered = filter === "ALL"
     ? leads
@@ -132,7 +132,7 @@ function LeadsContent() {
                 <div style={{ marginTop: "10px", padding: "10px 12px", background: "var(--muted-bg)", borderRadius: "var(--radius)", fontSize: "13px" }}>
                   {lead.ai_summary && <p style={{ marginBottom: "4px" }}>🤖 {lead.ai_summary}</p>}
                   {lead.ai_possible_duplicate && (
-                    <p style={{ color: "#e11d48", fontWeight: 600 }}>⚠ Possibly a repeat inquiry from this person</p>
+                    <p style={{ color: "#C75E32", fontWeight: 600 }}>⚠ Possibly a repeat inquiry from this person</p>
                   )}
                   {lead.ai_suggested_type && lead.ai_suggested_type !== lead.inquiry_type && (
                     <p style={{ color: "var(--muted)" }}>AI suggests category: <strong>{lead.ai_suggested_type}</strong></p>

@@ -4,43 +4,53 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #0f172a;
-  --primary: #1e3a5f;
-  --primary-light: #2d5a9e;
-  --primary-dark: #122440;
-  --accent: #16a34a;
-  --accent-light: #22c55e;
-  --accent-dark: #15803d;
-  --navy: #1e3a5f;
-  --green: #16a34a;
-  --muted: #64748b;
-  --muted-bg: #f1f5f9;
-  --border: #e2e8f0;
+  --foreground: #0d182a;
+  --primary: #0d182a;        /* Midnight — wordmark, headers, dominant surfaces */
+  --primary-light: #1a3dbf;  /* Royal Blue */
+  --primary-dark: #070d18;
+  --accent: #d4a23a;         /* Sand Gold — CTAs, highlights */
+  --accent-light: #e0b457;
+  --accent-dark: #b4872c;
+  --navy: #0d182a;
+  --green: #5f7a46;          /* Sage Green */
+  --terracotta: #c75e32;     /* Medical */
+  --indigo: #6a5acd;         /* Virtual Solutions */
+  --teal: #0084a6;           /* Solutions */
+  --stone: #e7e2d6;
+  --charcoal: #24262b;
+  --muted: #5b6472;
+  --muted-bg: #f4f1ea;       /* warm Stone-tinted neutral, not cold slate */
+  --border: #e4ddcd;
   --card-bg: #ffffff;
-  --input-bg: #f8fafc;
-  --shadow: 0 1px 3px rgba(0,0,0,0.1);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-  --shadow-lg: 0 10px 30px rgba(0,0,0,0.12);
+  --input-bg: #faf8f3;
+  --shadow: 0 1px 3px rgba(13,24,42,0.1);
+  --shadow-md: 0 4px 12px rgba(13,24,42,0.08);
+  --shadow-lg: 0 10px 30px rgba(13,24,42,0.14);
   --radius: 0.5rem;
   --radius-lg: 1rem;
 }
 
 .dark {
-  --background: #0b1120;
-  --foreground: #f1f5f9;
-  --primary: #2d5a9e;
-  --primary-light: #3b6fbe;
-  --primary-dark: #1e3a5f;
-  --accent: #22c55e;
-  --accent-light: #4ade80;
-  --accent-dark: #16a34a;
-  --navy: #2d5a9e;
-  --green: #22c55e;
-  --muted: #94a3b8;
-  --muted-bg: #1e293b;
-  --border: #334155;
-  --card-bg: #1e293b;
-  --input-bg: #0f172a;
+  --background: #0a1220;
+  --foreground: #f4f1ea;
+  --primary: #1a3dbf;
+  --primary-light: #3458d6;
+  --primary-dark: #0d182a;
+  --accent: #e0b457;
+  --accent-light: #ecc877;
+  --accent-dark: #d4a23a;
+  --navy: #1a3dbf;
+  --green: #7a9960;
+  --terracotta: #d97b51;
+  --indigo: #8778e0;
+  --teal: #1aa8cb;
+  --stone: #2a2c33;
+  --charcoal: #e7e2d6;
+  --muted: #9aa3b2;
+  --muted-bg: #131d30;
+  --border: #253149;
+  --card-bg: #0f1a2d;
+  --input-bg: #0a1220;
   --shadow: 0 1px 3px rgba(0,0,0,0.4);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
   --shadow-lg: 0 10px 30px rgba(0,0,0,0.4);

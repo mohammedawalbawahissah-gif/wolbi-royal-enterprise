@@ -7,13 +7,14 @@ export default function FarmaSystPage() {
     <ProductPage
       name="FarmaSyst"
       industry="Agriculture"
-      color="#16a34a"
+      color="#5F7A46"
       hero={{
         eyebrow: "FarmaSyst",
         title: "The agricultural management system built for Ghanaian farmers.",
         subtitle: "From farm records and credit applications to marketplace listings and disbursement tracking — FarmaSyst is the operational backbone for smallholder farmers and agribusinesses.",
         cta: { href: "#demo", label: "Request a Demo" },
         cta2: { href: "/divisions/technologies", label: "Wolbi Technologies" },
+        bgImage: "/brand/photos/farmer.jpg",
       }}
       overview={{
         title: "Agriculture software that understands the Ghanaian context.",

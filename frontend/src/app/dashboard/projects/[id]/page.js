@@ -60,7 +60,7 @@ function ProjectDetailContent({ params }) {
             {generating ? "Drafting…" : project.ai_case_study_draft ? "Regenerate" : "Draft with AI"}
           </button>
         </div>
-        {aiError && <p style={{ color: "#e11d48", fontSize: "13px" }}>{aiError}</p>}
+        {aiError && <p style={{ color: "#C75E32", fontSize: "13px" }}>{aiError}</p>}
         {project.ai_case_study_draft ? (
           <p style={{ color: "var(--foreground)", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{project.ai_case_study_draft}</p>
         ) : (

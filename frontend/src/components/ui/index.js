@@ -106,23 +106,37 @@ export function Tag({ children, color = "var(--accent)" }) {
   );
 }
 
-export function Hero({ eyebrow, title, subtitle, cta, cta2, badge, children, dark = true }) {
+export function Hero({ eyebrow, title, subtitle, cta, cta2, badge, children, dark = true, bgImage }) {
   return (
     <div style={{
       minHeight: "90vh", display: "flex", alignItems: "center",
       background: dark ? "linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%)" : "var(--muted-bg)",
       padding: "100px 1.5rem 64px", position: "relative", overflow: "hidden",
     }}>
+      {bgImage && (
+        <>
+          <img
+            src={bgImage}
+            alt=""
+            aria-hidden="true"
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.32 }}
+          />
+          <div style={{
+            position: "absolute", inset: 0,
+            background: "linear-gradient(100deg, var(--primary-dark) 28%, rgba(13,24,42,0.55) 62%, rgba(13,24,42,0.25) 100%)",
+          }} />
+        </>
+      )}
       {dark && (
         <>
-          <div style={{ position: "absolute", top: "-20%", right: "-10%", width: "500px", height: "500px", borderRadius: "50%", background: "rgba(22,163,74,0.08)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", top: "-20%", right: "-10%", width: "500px", height: "500px", borderRadius: "50%", background: "rgba(212,162,58,0.10)", pointerEvents: "none" }} />
           <div style={{ position: "absolute", bottom: "-10%", left: "-5%", width: "350px", height: "350px", borderRadius: "50%", background: "rgba(255,255,255,0.04)", pointerEvents: "none" }} />
         </>
       )}
       <div style={{ maxWidth: "1200px", margin: "0 auto", width: "100%", position: "relative", zIndex: 1 }}>
         {badge && (
           <div style={{ marginBottom: "20px" }}>
-            <span style={{ display: "inline-block", padding: "5px 14px", borderRadius: "999px", fontSize: "12px", fontWeight: 700, background: "rgba(22,163,74,0.2)", color: "#4ade80", letterSpacing: "1px", textTransform: "uppercase" }}>{badge}</span>
+            <span style={{ display: "inline-block", padding: "5px 14px", borderRadius: "999px", fontSize: "12px", fontWeight: 700, background: "rgba(212,162,58,0.18)", color: "#e0b457", letterSpacing: "1px", textTransform: "uppercase" }}>{badge}</span>
           </div>
         )}
         {eyebrow && (

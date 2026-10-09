@@ -34,6 +34,7 @@ export default function AboutPage() {
         subtitle="Mohammed Awal Bawah Issah founded Wolbi Royal Enterprise in Tamale, Ghana — bringing together technology, healthcare, agriculture, real estate, virtual solutions, and community impact under one roof."
         cta={{ href: "/founder", label: "Meet Mohammed" }}
         cta2={{ href: "/contact", label: "Work with Us" }}
+        bgImage="/brand/photos/nurse.jpg"
       />
 
       {/* Mission & Vision */}

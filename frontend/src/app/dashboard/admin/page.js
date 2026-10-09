@@ -49,7 +49,7 @@ function AIInsightsCard() {
           {loading ? "Analyzing…" : narrative ? "Regenerate" : "Generate Briefing"}
         </button>
       </div>
-      {error && <p style={{ color: "#e11d48", fontSize: "13px" }}>{error}</p>}
+      {error && <p style={{ color: "#C75E32", fontSize: "13px" }}>{error}</p>}
       {narrative && <p style={{ fontSize: "14px", lineHeight: 1.7, color: "var(--foreground)" }}>{narrative}</p>}
     </div>
   );

@@ -35,7 +35,7 @@ function VolunteerCard({ volunteer }) {
         {loading ? "Matching…" : "🤖 Suggest best-fit program"}
       </button>
 
-      {error && <p style={{ color: "#e11d48", fontSize: "12px", marginTop: "6px" }}>{error}</p>}
+      {error && <p style={{ color: "#C75E32", fontSize: "12px", marginTop: "6px" }}>{error}</p>}
       {suggestions && suggestions.length === 0 && (
         <p style={{ color: "var(--muted)", fontSize: "12px", marginTop: "6px" }}>No strong match found among active programs.</p>
       )}

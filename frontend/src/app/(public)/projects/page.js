@@ -5,7 +5,7 @@ import { Hero, FullSection, SectionHeading, Card, Tag } from "@/components/ui";
 
 const UNIT_COLORS = {
   TECHNOLOGIES: "var(--primary)",
-  MEDICAL:      "#e11d48",
+  MEDICAL:      "#C75E32",
   FOUNDATION:   "var(--accent)",
 };
 

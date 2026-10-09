@@ -7,16 +7,26 @@ import { ArrowRight, Zap, Heart, Users, Leaf } from "lucide-react";
 import { Hero, Section, FullSection, SectionHeading, Card, Btn, Stat, Tag, NewsletterInline } from "@/components/ui";
 
 const DIVISIONS = [
-  { icon: <Zap size={24} />, name: "Wolbi Technologies",      tagline: "Software, AI & digital transformation",              color: "var(--primary)", href: "/divisions/technologies" },
-  { icon: <Heart size={24} />, name: "Wolbi Medical Services", tagline: "Health consulting, lab services & telehealth",       color: "#e11d48",        href: "/divisions/medical" },
-  { icon: <Users size={24} />, name: "Wolbi Virtual Solutions",tagline: "Virtual assistance & business operations",           color: "#7c3aed",        href: "/divisions/virtual-solutions" },
-  { icon: <Leaf size={24} />,  name: "Wolbi Foundation",       tagline: "Community health, education & youth impact",        color: "var(--accent)",  href: "/divisions/foundation" },
+  { icon: <Zap size={24} />, name: "Wolbi Technologies",      tagline: "Software, AI & digital transformation",              color: "var(--primary-light)", href: "/divisions/technologies" },
+  { icon: <Heart size={24} />, name: "Wolbi Medical Services", tagline: "Health consulting, lab services & telehealth",       color: "var(--terracotta)",     href: "/divisions/medical" },
+  { icon: <Users size={24} />, name: "Wolbi Virtual Solutions",tagline: "Virtual assistance & business operations",           color: "var(--indigo)",         href: "/divisions/virtual-solutions" },
+  { icon: <Leaf size={24} />,  name: "Wolbi Foundation",       tagline: "Community health, education & youth impact",        color: "var(--accent)",         href: "/divisions/foundation" },
 ];
 
 const PRODUCTS = [
-  { key: "NEOMATCARE",   name: "NeomatCare",    industry: "Healthcare",                       tagline: "Emergency referral coordination for maternal and neonatal care across Ghana.",         href: "/solutions/neomatcare",    color: "#e11d48" },
-  { key: "FARMASYST",    name: "FarmaSyst",     industry: "Agriculture",                      tagline: "End-to-end farm management, credit access, and agri-marketplace.",                    href: "/solutions/farmasyst",     color: "var(--accent)" },
-  { key: "MAGHAZ_ASSIST",name: "MAGHAZ Assist", industry: "Real Estate · Hospitality · Construction", tagline: "A seven-module ERP for Africa's built environment.",             href: "/solutions/maghaz-assist", color: "var(--primary)" },
+  { key: "NEOMATCARE",   name: "NeomatCare",    industry: "Healthcare",                       tagline: "Emergency referral coordination for maternal and neonatal care across Ghana.",         href: "/solutions/neomatcare",    color: "var(--terracotta)" },
+  { key: "FARMASYST",    name: "FarmaSyst",     industry: "Agriculture",                      tagline: "End-to-end farm management, credit access, and agri-marketplace.",                    href: "/solutions/farmasyst",     color: "var(--green)" },
+  { key: "MAGHAZ_ASSIST",name: "MAGHAZ Assist", industry: "Real Estate · Hospitality · Construction", tagline: "A seven-module ERP for Africa's built environment.",             href: "/solutions/maghaz-assist", color: "var(--primary-light)" },
+];
+
+const BRAND_IN_THE_FIELD = [
+  { src: "/brand/photos/pylon-sign.jpg", label: "Site signage" },
+  { src: "/brand/photos/door-sign.jpg",  label: "Office signage" },
+  { src: "/brand/photos/suv.jpg",        label: "Fleet branding" },
+  { src: "/brand/photos/van.jpg",        label: "Field vehicles" },
+  { src: "/brand/photos/polo.jpg",       label: "Staff uniform" },
+  { src: "/brand/photos/cap.jpg",        label: "Field gear" },
+  { src: "/brand/photos/tote.jpg",       label: "Branded merchandise" },
 ];
 
 function DivisionCard({ icon, name, tagline, color, href }) {
@@ -88,11 +98,12 @@ export default function HomePage() {
     <>
       {/* Hero */}
       <Hero
-        badge="Born in Ghana. Built for Africa."
-        title={<>Where healthcare meets<br />technology meets impact.</>}
-        subtitle="Wolbi Royal Enterprise is a multi-division organisation delivering software, medical services, virtual assistance, and community programmes — founded in Tamale, Ghana."
+        badge="Building the north, together."
+        title={<>Building the north,<br />together.</>}
+        subtitle="Wolbi Royal Enterprise is a multi-division organisation delivering software, medical services, virtual assistance, and community programmes — founded in Tamale, Northern Region, Ghana."
         cta={{ href: "/about", label: "Our Story" }}
         cta2={{ href: "/contact", label: "Start a Conversation" }}
+        bgImage="/brand/photos/aerial-tamale.jpg"
       >
         <div style={{ display: "flex", gap: "40px", marginTop: "56px", flexWrap: "wrap" }}>
           <Stat value="4"    label="Active Divisions" />
@@ -114,6 +125,25 @@ export default function HomePage() {
             const { href, ...rest } = d;
             return <DivisionCard key={href} href={href} {...rest} />;
           })}
+        </div>
+      </Section>
+
+      {/* Brand in the field */}
+      <Section>
+        <SectionHeading
+          eyebrow="One Mark, Everywhere"
+          title="The same identity, wherever Wolbi shows up."
+          subtitle="From office signage to the vehicles our field teams drive, one consistent mark carries the Wolbi name into every community we work in."
+        />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "14px" }}>
+          {BRAND_IN_THE_FIELD.map((item) => (
+            <div key={item.src} style={{ borderRadius: "14px", overflow: "hidden", border: "1px solid var(--border)", background: "var(--card-bg)" }}>
+              <div style={{ position: "relative", width: "100%", aspectRatio: "4 / 3" }}>
+                <Image src={item.src} alt={item.label} fill style={{ objectFit: "cover" }} sizes="200px" />
+              </div>
+              <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--muted)", padding: "10px 12px" }}>{item.label}</p>
+            </div>
+          ))}
         </div>
       </Section>
 

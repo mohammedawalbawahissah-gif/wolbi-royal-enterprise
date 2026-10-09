@@ -7,7 +7,7 @@ export default function MaghazAssistPage() {
     <ProductPage
       name="MAGHAZ Assist"
       industry="Real Estate · Hospitality · Construction"
-      color="#1e3a5f"
+      color="#0D182A"
       hero={{
         eyebrow: "MAGHAZ Assist",
         title: "Enterprise management for Africa's built environment.",
