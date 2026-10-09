@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { Menu, X, Sun, Moon, ChevronDown } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import AIConcierge from "@/components/AIConcierge";
+import { Logo, LogoMark } from "@/components/Logo";
 
 const NAV = [
   { label: "About", href: "/about" },
@@ -104,11 +105,7 @@ function Navbar() {
           display: flex; align-items: center; justify-content: space-between;
           height: 68px;
         }
-        .nav-logo { display: flex; flex-direction: column; text-decoration: none; }
-        .nav-logo-name { font-size: 15px; font-weight: 800; letter-spacing: -0.3px; color: var(--primary); line-height: 1.1; }
-        .navbar:not(.scrolled) .nav-logo-name { color: #fff; }
-        .nav-logo-sub { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
-        .navbar:not(.scrolled) .nav-logo-sub { color: rgba(255,255,255,0.6); }
+        .nav-logo { display: flex; align-items: center; text-decoration: none; }
         .nav-links { display: flex; align-items: center; gap: 2px; }
         .nav-link {
           display: flex; align-items: center; gap: 4px; padding: 7px 9px; border-radius: 6px;
@@ -179,8 +176,7 @@ function Navbar() {
       <nav className={`navbar${scrolled ? " scrolled" : ""}`}>
         <div className="navbar-inner">
           <Link href="/" className="nav-logo">
-            <span className="nav-logo-name">Wolbi Royal</span>
-            <span className="nav-logo-sub">Enterprise</span>
+            <Logo size={32} light={!scrolled} />
           </Link>
           <div className="nav-links">
             {NAV.map((item) => <NavItem key={item.href} item={item} />)}
@@ -271,8 +267,10 @@ function Footer() {
       `}</style>
       <div className="footer-grid">
         <div>
-          <p className="footer-brand-name">Wolbi Royal Enterprise</p>
-          <p className="footer-brand-desc">Technology, healthcare, virtual solutions, and community impact — building Africa&apos;s future through purposeful innovation rooted in lived experience.</p>
+          <div style={{ marginBottom: "16px" }}>
+            <Logo size={34} light />
+          </div>
+          <p className="footer-brand-desc">Technology, health services, virtual solutions, and community impact — one enterprise, four divisions, built in Tamale for Northern Ghana.</p>
         </div>
         <div>
           <p className="footer-col-title">Divisions</p>
@@ -288,8 +286,8 @@ function Footer() {
         </div>
       </div>
       <div className="footer-bottom">
-        <p className="footer-bottom-text">© {new Date().getFullYear()} Wolbi Royal Enterprise. All rights reserved.</p>
-        <p className="footer-bottom-text">Tamale, Ghana · wolbiroyal.com</p>
+        <p className="footer-bottom-text">© {new Date().getFullYear()} Wolbi Royal Enterprise. Building the <span style={{ color: "var(--accent-light, #e0b457)" }}>north</span>, together.</p>
+        <p className="footer-bottom-text">Tamale, Northern Region, Ghana · wolbiroyal.com</p>
       </div>
     </footer>
   );

@@ -9,9 +9,9 @@ import api from "@/lib/api";
 const POLL_MS = 30000;
 
 export const KIND_META = {
-  LEAD:             { label: "Request",       color: "#1e3a5f" },
-  LEAD_ESCALATION:  { label: "Ask Wolbi",     color: "#7c3aed" },
-  TELECONSULTATION: { label: "Teleconsult",   color: "#16a34a" },
+  LEAD:             { label: "Request",       color: "#0D182A" },
+  LEAD_ESCALATION:  { label: "Ask Wolbi",     color: "#6A5ACD" },
+  TELECONSULTATION: { label: "Teleconsult",   color: "#5F7A46" },
   VOLUNTEER:        { label: "Volunteer",     color: "#d97706" },
   ASSIGNMENT:       { label: "Assignment",    color: "#2563eb" },
   COMMENT:          { label: "Comment",       color: "#64748b" },
@@ -117,7 +117,7 @@ export default function NotificationBell() {
         {unread > 0 && (
           <span style={{
             position: "absolute", top: "-5px", right: "-5px", minWidth: "18px", height: "18px",
-            padding: "0 5px", borderRadius: "9px", background: "#e11d48", color: "#fff",
+            padding: "0 5px", borderRadius: "9px", background: "#C75E32", color: "#fff",
             fontSize: "11px", fontWeight: 700, lineHeight: "18px", textAlign: "center",
             border: "2px solid var(--muted-bg)",
           }}>

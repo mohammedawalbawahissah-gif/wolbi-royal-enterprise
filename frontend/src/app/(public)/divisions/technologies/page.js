@@ -5,10 +5,10 @@ import { Hero, FullSection, Section, SectionHeading, Card, Btn } from "@/compone
 import { ArrowRight, CheckCircle } from "lucide-react";
 
 const SERVICES = [
-  { icon: "🌐", name: "Full Stack Software Engineering", color: "#1e3a5f",
+  { icon: "🌐", name: "Full Stack Software Engineering", color: "#0D182A",
     description: "End-to-end web application development — from database architecture and API design to frontend interfaces and deployment. We build systems that scale and last.",
     features: ["Django REST Framework backends", "React & Next.js frontends", "PostgreSQL & database design", "REST & GraphQL APIs", "Cloud deployment & DevOps"] },
-  { icon: "📱", name: "Mobile App Development", color: "#7c3aed",
+  { icon: "📱", name: "Mobile App Development", color: "#6A5ACD",
     description: "Cross-platform mobile applications built with React Native — single codebase, native performance, deployed to both iOS and Android.",
     features: ["React Native development", "iOS & Android deployment", "Offline-first architecture", "Push notifications", "App Store & Play Store submission"] },
   { icon: "🔒", name: "Cyber Security", color: "#dc2626",
@@ -26,7 +26,7 @@ const SERVICES = [
   { icon: "✨", name: "Creative Tech (AI)", color: "#ea580c",
     description: "AI-powered creative and productivity solutions — content generation, image workflows, automation, and custom GPT-based tools.",
     features: ["Custom AI tool development", "LLM integration & prompt engineering", "AI content workflows", "Automation with AI", "ChatGPT, Claude, Gemini integrations"] },
-  { icon: "🧑‍💼", name: "Virtual Assistance", color: "#16a34a",
+  { icon: "🧑‍💼", name: "Virtual Assistance", color: "#5F7A46",
     description: "Professional virtual assistance — administrative support, research, scheduling, data entry, and business operations managed remotely.",
     features: ["Executive & admin support", "Calendar & inbox management", "Research & data compilation", "CRM management", "Business process support"] },
   { icon: "✍️", name: "Content Creation", color: "#db2777",

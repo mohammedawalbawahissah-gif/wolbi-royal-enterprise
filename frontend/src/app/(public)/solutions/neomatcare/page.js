@@ -7,13 +7,14 @@ export default function NeomatCarePage() {
     <ProductPage
       name="NeomatCare"
       industry="Healthcare"
-      color="#e11d48"
+      color="#C75E32"
       hero={{
         eyebrow: "NeomatCare",
         title: "Every second counts in maternal and neonatal emergencies.",
         subtitle: "NeomatCare is a facility coordination and emergency referral system purpose-built for Ghana's maternal and neonatal healthcare pathway — from community level to tertiary facility.",
         cta: { href: "#demo", label: "Request a Demo" },
         cta2: { href: "/divisions/medical", label: "Wolbi Medical Services" },
+        bgImage: "/brand/photos/mother-baby.jpg",
       }}
       overview={{
         title: "The referral system Ghana's health facilities actually need.",

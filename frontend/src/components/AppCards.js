@@ -1,7 +1,7 @@
 "use client";
 
 const STATUS = {
-  LIVE:        { label: "Live",        color: "#16a34a" },
+  LIVE:        { label: "Live",        color: "#5F7A46" },
   BETA:        { label: "Beta",        color: "#d97706" },
   COMING_SOON: { label: "Coming soon", color: "#64748b" },
 };
@@ -9,7 +9,7 @@ const STATUS = {
 export function AppCard({ app }) {
   const status = STATUS[app.status] || STATUS.LIVE;
   const soon = app.status === "COMING_SOON";
-  const accent = app.color || "#1e3a5f";
+  const accent = app.color || "#0D182A";
 
   const body = (
     <>

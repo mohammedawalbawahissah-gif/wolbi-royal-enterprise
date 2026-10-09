@@ -44,7 +44,7 @@ function AIDraftPanel() {
           {loading ? "Drafting…" : "Draft"}
         </button>
       </div>
-      {error && <p style={{ color: "#e11d48", fontSize: "13px" }}>{error}</p>}
+      {error && <p style={{ color: "#C75E32", fontSize: "13px" }}>{error}</p>}
       {draft && (
         <div>
           <textarea readOnly value={draft} rows={10} style={{ ...inputStyle, width: "100%", fontFamily: "inherit", whiteSpace: "pre-wrap" }} />

@@ -85,7 +85,7 @@ function AssignmentDetailContent({ params }) {
             {summarizing ? "Summarizing…" : aiSummary ? "Refresh" : "Summarize progress"}
           </button>
         </div>
-        {aiError && <p style={{ color: "#e11d48", fontSize: "13px" }}>{aiError}</p>}
+        {aiError && <p style={{ color: "#C75E32", fontSize: "13px" }}>{aiError}</p>}
         {aiSummary && <p style={{ lineHeight: 1.7, fontSize: "14px" }}>{aiSummary}</p>}
       </div>
 

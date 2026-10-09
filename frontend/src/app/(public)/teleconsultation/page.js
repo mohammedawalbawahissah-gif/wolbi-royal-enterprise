@@ -174,7 +174,7 @@ export default function TeleconsultationPage() {
       (scheduled && s.join_opens_at && serverNow >= new Date(s.join_opens_at).getTime() && ["CONFIRMED", "CLAIMED"].includes(s.status) && s.join_state !== "ended");
     const spinStyle = <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>;
 
-    const errLine = error && <p style={{ color: "#e11d48", fontSize: "14px", margin: "0 0 16px" }}>{error}</p>;
+    const errLine = error && <p style={{ color: "#C75E32", fontSize: "14px", margin: "0 0 16px" }}>{error}</p>;
 
     const changeForm = changing && (
       <form onSubmit={reschedule} style={{ margin: "20px auto 0", maxWidth: "380px", display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -305,7 +305,7 @@ export default function TeleconsultationPage() {
             )}
             <textarea required rows={4} placeholder="What would you like to discuss?" value={form.reason}
               onChange={(e) => setForm({ ...form, reason: e.target.value })} style={{ ...inp, resize: "vertical" }} />
-            {error && <p style={{ color: "#e11d48", fontSize: "13px" }}>{error}</p>}
+            {error && <p style={{ color: "#C75E32", fontSize: "13px" }}>{error}</p>}
             <button type="submit" disabled={submitting} style={{ ...primary, opacity: submitting ? 0.7 : 1 }}>
               {submitting ? "Submitting…" : mode === "INSTANT" ? "Connect Now" : "Request This Time"}
             </button>

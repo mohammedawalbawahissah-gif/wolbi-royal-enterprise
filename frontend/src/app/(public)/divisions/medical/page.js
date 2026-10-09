@@ -385,12 +385,12 @@ function BookingModal({ service, onClose }) {
 
 const SERVICES = [
   {
-    icon: "🧪", name: "Laboratory Diagnostic Services", bookingType: "LAB", color: "#e11d48",
+    icon: "🧪", name: "Laboratory Diagnostic Services", bookingType: "LAB", color: "#C75E32",
     description: "Comprehensive diagnostic testing across haematology, biochemistry, microbiology, serology, parasitology, cytology, and more. Results delivered with clinical accuracy and professional interpretation.",
     features: ["Haematology & Blood Science", "Clinical Chemistry Panels", "Microbiology & Culture", "Serology & Immunology", "Parasitology & Malaria", "Histopathology & Cytology"],
   },
   {
-    icon: "📡", name: "USG Scan Services", bookingType: "USG", color: "#7c3aed",
+    icon: "📡", name: "USG Scan Services", bookingType: "USG", color: "#6A5ACD",
     description: "Ultrasound scanning services covering abdominal, obstetric, gynaecological, urological, musculoskeletal, vascular, and guided procedural imaging.",
     features: ["Obstetric & Pregnancy Scans", "Abdominal & Pelvic Imaging", "Thyroid & Neck Scans", "Vascular Doppler Studies", "Musculoskeletal Assessment", "Procedural Guidance"],
   },
@@ -400,12 +400,12 @@ const SERVICES = [
     features: ["Standard & Legal Paternity Tests", "Immigration DNA Tests", "Sibling & Grandparentage Tests", "Prenatal Paternity (Non-Invasive)", "Forensic DNA Analysis", "Genetic Health Screening"],
   },
   {
-    icon: "📋", name: "Health Advisory & Consulting", bookingType: "ADVISORY", color: "#16a34a",
+    icon: "📋", name: "Health Advisory & Consulting", bookingType: "ADVISORY", color: "#5F7A46",
     description: "Strategic consulting for health organisations, facilities, and professionals across laboratory QMS, clinical protocol development, digital health, and research.",
     features: ["Laboratory QA & QMS Setup", "ISO 15189 Preparation", "Clinical Protocol Development", "Digital Health Advisory", "NeomatCare Integration", "Research & Evidence Support"],
   },
   {
-    icon: "📱", name: "Telehealth Support", bookingType: "TELEHEALTH", color: "#1e3a5f",
+    icon: "📱", name: "Telehealth Support", bookingType: "TELEHEALTH", color: "#0D182A",
     description: "Remote health consultations, chronic disease management, health education, telehealth programme design, and care coordination — accessible from anywhere.",
     features: ["General & Specialist Remote Consultations", "Lab Result Interpretation", "Chronic Disease Management", "Maternal & Paediatric Health", "Telehealth Programme Design", "Health Coaching & Education"],
   },
@@ -498,13 +498,13 @@ export default function MedicalPage() {
             {/* Email */}
             <Card style={{ padding: "24px" }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: "14px", marginBottom: "14px" }}>
-                <div style={{ color: "#7c3aed", marginTop: "2px" }}><Mail size={20} /></div>
+                <div style={{ color: "#6A5ACD", marginTop: "2px" }}><Mail size={20} /></div>
                 <div>
                   <p style={{ fontWeight: 700, fontSize: "15px", marginBottom: "4px" }}>Email Us</p>
                   <p style={{ color: "var(--muted)", fontSize: "13px", lineHeight: 1.5 }}>Send referral documentation, detailed queries, or clinical correspondence directly to our inbox.</p>
                 </div>
               </div>
-              <a href="mailto:medical@wolbiroyal.com" style={{ display: "inline-block", padding: "9px 18px", background: "#7c3aed", color: "#fff", borderRadius: "8px", fontSize: "13px", fontWeight: 700, textDecoration: "none" }}>
+              <a href="mailto:medical@wolbiroyal.com" style={{ display: "inline-block", padding: "9px 18px", background: "#6A5ACD", color: "#fff", borderRadius: "8px", fontSize: "13px", fontWeight: 700, textDecoration: "none" }}>
                 ✉️ Send Email
               </a>
             </Card>
